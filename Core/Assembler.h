@@ -11,8 +11,9 @@ enum class ArmipsMode { FILE, MEMORY };
 
 struct LabelDefinition
 {
+	std::wstring originalName;
 	std::wstring name;
-	int value;
+	int64_t value;
 };
 
 struct EquationDefinition
@@ -36,6 +37,7 @@ struct ArmipsArguments
 	std::wstring inputFileName;
 	std::wstring tempFileName;
 	std::wstring symFileName;
+	bool useAbsoluteFileNames;
 
 	// memory mode
 	std::shared_ptr<AssemblerFile> memoryFile;
@@ -44,10 +46,12 @@ struct ArmipsArguments
 	ArmipsArguments()
 	{
 		mode = ArmipsMode::FILE;
+		symFileVersion = 0;
 		errorOnWarning = false;
 		silent = false;
 		errorsResult = nullptr;
+		useAbsoluteFileNames = true;
 	}
 };
 
-bool runArmips(ArmipsArguments& arguments);
+bool runArmips(ArmipsArguments& settings);

@@ -1,4 +1,4 @@
-# ARMIPS assembler v0.10
+# armips assembler v0.11
 * Author: Kingcom
 * Source: https://github.com/Kingcom/armips
 * Automated builds: http://buildbot.orphis.net/armips
@@ -9,11 +9,10 @@ Note: This file is still incomplete, some information is missing or may be outda
 
 ## 1.1 Usage
 
-The assembler is called from the command line. There is both an x86 and an x86-64 version. Depending on the version, the usage is as follows:
+The assembler is called from the command line. The usage is as follows:
 
 ```
 armips code.asm [optional parameters]
-armips64 code.asm [optional parameters]
 ```
 
 `code.asm` is the main file of your assembly code, which can open and include other files.
@@ -32,7 +31,7 @@ Specifies the output name for temporary assembly data. Example output:
 ```
 
 #### `-sym <filename>`
-Specifies the output name for symbol data in the sym format. This format is supported by the debuggers in NO$PSX and NO$GBA. Example output:
+Specifies the output name for symbol data in the sym format. This format is supported by the debuggers in NO\$PSX and NO\$GBA. Example output:
 ```
 00000000 0
 80000000 .dbl:0010
@@ -69,11 +68,11 @@ Specifies the working directory to be used during execution.
 # 2. Installation
 
 ## 2.1 Download binary
-Download the latest Windows 32-bit binary from the [Automated ARMIPS builds](http://buildbot.orphis.net/armips) site. You will need the [Microsoft Visual Studio 2015 x86 Redistributable](https://www.microsoft.com/en-US/download/details.aspx?id=48145).
+Download the latest Windows 32-bit binary from the [Automated armips builds](http://buildbot.orphis.net/armips) site. You will need the [Microsoft Visual Studio 2015 x86 Redistributable](https://www.microsoft.com/en-US/download/details.aspx?id=48145).
 
 ## 2.2 Building from source
 
-The latest code is available at the [ARMIPS GitHub repository](https://github.com/Kingcom/armips). Make sure to also initialize and update submodules. This can be accomplished with one command:
+The latest code is available at the [armips GitHub repository](https://github.com/Kingcom/armips). Make sure to also initialize and update submodules. This can be accomplished with one command:
 ```bash
 $ git clone --recursive https://github.com/Kingcom/armips.git
 ```
@@ -132,8 +131,10 @@ nop :: nop :: nop :: nop
 ### Statement line spanning
 Single statements can continue on to the next line by inserting a `\` at the end of a line. Comments and whitespace can follow. For example:
 ```
-addiu t3, t4, \
- FunctionJumpTable - headersize() + 0x1000 * filesize("blob.bin")
+.ascii "NSM", (VERSION == "us") ? "E" : \
+              (VERSION == "jp") ? "J" : \
+              (VERSION == "eu") ? "P" : \
+                                  "X"
 ```
 
 ## 4.3 Labels
@@ -212,18 +213,20 @@ A few examples:
 
 ### Value types
 
-Three value types are supported: integers, floats and strings. Integers are defined by writing just a number in one of the supported bases as described above. A float is defined by an integer numerator, followed by a period, followed by the denominator, e.g. `2.5`. Floats can also use a different base prefix; in this case, both the numerator and denominator are evaluated using that base. For example, `11.5` is equivalent to `0xB.8`.
+Three value types are supported: integers, floats and strings. Integers are defined by writing just a number in one of the supported bases. Writing a character surrounded by single quotation marks will also give its Unicode value as an integer. For example, `'a'` is equivalent to `97`.
 
-Alternatively, a float can also be defined by exponential notation. This is formatted as an integer, followed by the letter `e`, followed by (optionally) a plus or minus representing the exponent sign, followed by an integer representing the exponent. For example, `314e-2` is equivalent to `3.14`; `5e3` and `5e+3` are equivalent to `5000.0`.
+A float is defined by an integer numerator, followed by a period, followed by the denominator, e.g. `2.5`. Floats can also use a different base prefix; in this case, both the numerator and denominator are evaluated using that base. For example, `11.5` is equivalent to `0xB.8`. Alternatively, a float can also be defined by exponential notation. This is formatted as an integer, followed by the letter `e`, followed by (optionally) a plus or minus representing the exponent sign, followed by an integer representing the exponent. For example, `314e-2` is equivalent to `3.14`; `5e3` and `5e+3` are equivalent to `5000.0`.
 
-Strings are defined by text wrapped in quotation marks (e.g. `"text"`). Quotation marks can be escaped by prefixing them with a backslash (`\`). Any backlash not followed by a quotation mark is kept as-is. If you want to use a backslash at the end of a string, prefix it by another backlash.
-For example, to write a quotation mark followed by a backlash:
+Strings are defined by text wrapped in double quotation marks (e.g. `"text"`). Double quotation marks can be escaped by prefixing them with a backslash (`\`). Any backslash not followed by a double quotation mark is kept as-is. If you want to use a backslash at the end of a string, prefix it by another backslash.
+For example, to write a double quotation mark followed by a backslash:
 
 ```
 .ascii "\"\\"
 ```
 
-String concatenation is possible with the + binary operator. Concatenating integers or floats with a string will convert those integers or floats to a string representation.
+String concatenation is possible with the `+` binary operator. Concatenating integers or floats with a string will convert those integers or floats to a string representation.
+
+Strings can also be compared to other strings using the standard comparison operators or compared to numbers using the `==` and `!=` operators.
 
 ### Built-in functions
 
@@ -235,8 +238,11 @@ Below is a table of functions built into the assembler that can be used with the
 | `endianness()` | current endianness as string, e.g. `"big"` or `"little"` |
 | `outputname()` | currently opened output filename, exactly as written in `.create` or `.open` directive |
 | `org()` | current memory address (like `.`) |
+| `org(label)` | memory address of `label` |
 | `orga()` | current absolute file address |
+| `orga(label)` | absolute file address of `label`|
 | `headersize()` | current header size (displacement of memory address against absolute file address) |
+| `headersize(label)` | header size of `label` (displacement of memory address against absolute file address) |
 | `defined(symbol)` | `1` if `symbol` is a defined symbol, `0` otherwise |
 | `fileexists(file)` | `1` if `file` exists, `0` otherwise |
 | `filesize(file)` | size of `file` in bytes |
@@ -692,7 +698,7 @@ Prints the message and sets warning/error flags. Useful with conditionals.
 .erroronwarning off
 ```
 
-By specifying `.erroronwarning on`, any warnings emitted by the assembler will be promoted to errors. Errors cause ARMIPS to abort the assembly process return a nonzero exit code. This property can also be enabled from the command line with the `-erroronwarning` flag, and can be turned off again with `.erroronwarning off`. By default, this feature is off.
+By specifying `.erroronwarning on`, any warnings emitted by the assembler will be promoted to errors. Errors cause armips to abort the assembly process return a nonzero exit code. This property can also be enabled from the command line with the `-erroronwarning` flag, and can be turned off again with `.erroronwarning off`. By default, this feature is off.
 
 ### Relative paths
 
@@ -1047,6 +1053,24 @@ will align the memory address to a multiple of 4, then create a label named `Mai
 
 ## 7.1 Change log
 
+* Version 0.11
+    * new `.aligna` directive for absolute address alignment
+    * new expression functions: `org(label)`, `orga(label)`, `headersize(label)`
+    * new expression functions: `min` and `max`
+    * fixed major bug in MIPS LO/HI ELF symbol relocation
+    * COP2, TLB\*, RFE instructions added to PSX
+    * fixed output of RSP VMOV/VRSQ\*/VRCP\* instructions
+    * RSP CTC2/CFC2 control register name support added
+    * fixed edge case bugs in ARM shift handling
+    * new `-definelabel` command line argument for defining label
+    * `-equ` command line option now normalizes the case of the name
+    * additional validations of command line arguments
+    * relativeinclude settings now respected in table directives
+    * fixed bugs in float exponential notation parsing
+    * fixed NaN and string comparisons with `<`, `<=`, `>`, `>=`
+    * negative initial header sizes now allowed (with warnings)
+    * correct line and column numbers for equ invocations
+    * other bugfixes and enhancements
 * Version 0.10
     * many bugfixes and enhancements
     * several new MIPS macros and pseudo-ops
@@ -1104,4 +1128,4 @@ There are several changes after version 0.7d that may break compatibility with c
 
 ## 7.3 License
 
-MIT Copyright (c) 2009-2018 Kingcom: [LICENSE.txt](LICENSE.txt)
+MIT Copyright (c) 2009-2020 Kingcom: [LICENSE.txt](LICENSE.txt)

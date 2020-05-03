@@ -221,6 +221,20 @@ StringList getStringListFromArray(wchar_t** source, int count)
 	return result;
 }
 
+StringList splitString(const std::wstring& str, const wchar_t delim, bool skipEmpty)
+{
+	StringList result;
+	std::wstringstream stream(str);
+	std::wstring arg;
+	while (std::getline(stream,arg,delim))
+	{
+		if (arg.empty() && skipEmpty) continue;
+		result.push_back(arg);
+	}
+
+	return result;
+}
+
 int64_t fileSize(const std::wstring& fileName)
 {
 #ifdef _WIN32
@@ -341,13 +355,13 @@ std::wstring getCurrentDirectory()
 #endif
 }
 
-void changeDirectory(const std::wstring& dir)
+bool changeDirectory(const std::wstring& dir)
 {
 #ifdef _WIN32
-	_wchdir(dir.c_str());
+	return _wchdir(dir.c_str()) == 0;
 #else
 	std::string utf8 = convertWStringToUtf8(dir);
-	chdir(utf8.c_str());
+	return chdir(utf8.c_str()) == 0;
 #endif
 }
 
