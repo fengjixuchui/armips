@@ -1,10 +1,12 @@
-#include "stdafx.h"
-#include "Parser.h"
-#include "ExpressionParser.h"
-#include "Core/Misc.h"
-#include "Commands/CommandSequence.h"
+#include "Parser/Parser.h"
+
+#include "Archs/Architecture.h"
 #include "Commands/CAssemblerLabel.h"
+#include "Commands/CommandSequence.h"
 #include "Core/Common.h"
+#include "Core/Misc.h"
+#include "Parser/DirectivesParser.h"
+#include "Parser/ExpressionParser.h"
 #include "Util/Util.h"
 
 inline bool isPartOfList(const std::wstring& value, const std::initializer_list<const wchar_t*>& terminators)
@@ -32,6 +34,14 @@ void Parser::pushConditionalResult(ConditionalResult cond)
 	info.inTrueBlock = info.inTrueBlock && cond != ConditionalResult::False;
 	info.inUnknownBlock = info.inUnknownBlock || cond == ConditionalResult::Unknown;
 	conditionStack.push_back(info);
+}
+
+void Parser::printError(const Token &token, const std::wstring &text)
+{
+	errorLine = token.line;
+	Global.FileInfo.LineNumber = (int) token.line;
+	Logger::printError(Logger::Error, text);
+	error = true;
 }
 
 Expression Parser::parseExpression()
@@ -99,7 +109,7 @@ bool Parser::parseIdentifier(std::wstring& dest)
 
 std::unique_ptr<CAssemblerCommand> Parser::parseCommandSequence(wchar_t indicator, const std::initializer_list<const wchar_t*> terminators)
 {
-	auto sequence = ::make_unique<CommandSequence>();
+	auto sequence = std::make_unique<CommandSequence>();
 
 	bool foundTermination = false;
 	while (atEnd() == false)
@@ -565,13 +575,13 @@ std::unique_ptr<CAssemblerCommand> Parser::parseMacroCall()
 
 	// skip macro instantiation in known false blocks
 	if (!isInsideUnknownBlock() && !isInsideTrueBlock())
-		return ::make_unique<DummyCommand>();
+		return std::make_unique<DummyCommand>();
 
 	// a macro is fully parsed once when it's loaded
 	// to gather all labels. it's not necessary to
 	// instantiate other macros at that time
 	if (initializingMacro)
-		return ::make_unique<DummyCommand>();
+		return std::make_unique<DummyCommand>();
 
 	// the first time a macro is instantiated, it needs to be analyzed
 	// for labels
@@ -602,11 +612,11 @@ std::unique_ptr<CAssemblerCommand> Parser::parseMacroCall()
 		// otherwise make sure the name is unique
 		std::wstring fullName;
 		if (Global.symbolTable.isLocalSymbol(label))
-			fullName = formatString(L"@@%s_%s_%08X",macro.name,label.substr(2),macro.counter);
+			fullName = tfm::format(L"@@%s_%s_%08X",macro.name,label.substr(2),macro.counter);
 		else if (Global.symbolTable.isStaticSymbol(label))
-			fullName = formatString(L"@%s_%s_%08X",macro.name,label.substr(1),macro.counter);
+			fullName = tfm::format(L"@%s_%s_%08X",macro.name,label.substr(1),macro.counter);
 		else
-			fullName = formatString(L"%s_%s_%08X",macro.name,label,macro.counter);
+			fullName = tfm::format(L"%s_%s_%08X",macro.name,label,macro.counter);
 
 		macroTokenizer.registerReplacement(label,fullName);
 	}
@@ -639,7 +649,7 @@ std::unique_ptr<CAssemblerCommand> Parser::parseLabel()
 			return nullptr;
 		}
 
-		return ::make_unique<CAssemblerLabel>(name,start.getOriginalText());
+		return std::make_unique<CAssemblerLabel>(name,start.getOriginalText());
 	}
 
 	return nullptr;
@@ -651,7 +661,7 @@ std::unique_ptr<CAssemblerCommand> Parser::handleError()
 	while (!atEnd() && nextToken().type != TokenType::Separator);
 
 	clearError();
-	return ::make_unique<InvalidCommand>();
+	return std::make_unique<InvalidCommand>();
 }
 
 
@@ -693,7 +703,7 @@ std::unique_ptr<CAssemblerCommand> Parser::parseCommand()
 	updateFileInfo();
 
 	if (atEnd())
-		return ::make_unique<DummyCommand>();
+		return std::make_unique<DummyCommand>();
 
 	if ((command = parseLabel()) != nullptr)
 		return command;

@@ -1,10 +1,13 @@
 #pragma once
-#include "../Util/FileClasses.h"
-#include "../Util/Util.h"
-#include "FileManager.h"
+
+#include <memory>
+#include <string>
+#include <vector>
+
+class AssemblerFile;
 
 #define ARMIPS_VERSION_MAJOR    0
-#define ARMIPS_VERSION_MINOR    10
+#define ARMIPS_VERSION_MINOR    11
 #define ARMIPS_VERSION_REVISION 0
 
 enum class ArmipsMode { FILE, MEMORY };
@@ -29,7 +32,8 @@ struct ArmipsArguments
 	int symFileVersion;
 	bool errorOnWarning;
 	bool silent;
-	StringList* errorsResult;
+	bool showStats;
+	std::vector<std::wstring>* errorsResult;
 	std::vector<EquationDefinition> equList;
 	std::vector<LabelDefinition> labels;
 
@@ -49,6 +53,7 @@ struct ArmipsArguments
 		symFileVersion = 0;
 		errorOnWarning = false;
 		silent = false;
+		showStats = false;
 		errorsResult = nullptr;
 		useAbsoluteFileNames = true;
 	}

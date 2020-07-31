@@ -1,11 +1,15 @@
-#include "stdafx.h"
-#include "PsxRelocator.h"
-#include "Core/Misc.h"
+#include "Archs/MIPS/PsxRelocator.h"
+
+#include "Archs/MIPS/MipsElfRelocator.h"
 #include "Core/Common.h"
-#include <map>
-#include "Util/CRC.h"
 #include "Core/FileManager.h"
+#include "Core/Misc.h"
+#include "Core/SymbolData.h"
+#include "Util/CRC.h"
 #include "Util/Util.h"
+
+#include <cstring>
+#include <map>
 
 struct PsxLibEntry
 {
@@ -557,7 +561,7 @@ DirectivePsxObjImport::DirectivePsxObjImport(const std::wstring& fileName)
 	}
 }
 
-bool DirectivePsxObjImport::Validate()
+bool DirectivePsxObjImport::Validate(const ValidateState &state)
 {
 	int memory = (int) g_fileManager->getVirtualAddress();
 	rel.relocate(memory);

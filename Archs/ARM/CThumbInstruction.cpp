@@ -1,9 +1,11 @@
-#include "stdafx.h"
-#include "CThumbInstruction.h"
+#include "Archs/ARM/CThumbInstruction.h"
+
+#include "Archs/ARM/Arm.h"
+#include "Archs/ARM/ThumbOpcodes.h"
 #include "Core/Common.h"
-#include "Arm.h"
-#include "ThumbOpcodes.h"
 #include "Core/FileManager.h"
+#include "Core/Misc.h"
+#include "Util/Util.h"
 
 bool CThumbInstruction::Load(char* Name, char* Params)
 {
@@ -30,7 +32,7 @@ void CThumbInstruction::setPoolAddress(int64_t address)
 	Vars.Immediate = pos >> 2;
 }
 
-bool CThumbInstruction::Validate()
+bool CThumbInstruction::Validate(const ValidateState &state)
 {
 	RamPos = g_fileManager->getVirtualAddress();
 
@@ -344,7 +346,7 @@ void CThumbInstruction::writeTempData(TempData& tempData) const
 {
 	char str[256];
 
-	int pos = sprintf(str,"   %s",Opcode.name);
+	int pos = sprintf(str,"   %S",Opcode.name);
 	while (pos < 11) str[pos++] = ' ';
 	str[pos] = 0;
 	FormatInstruction(Opcode.mask,&str[pos]);

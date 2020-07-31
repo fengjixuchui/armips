@@ -1,12 +1,24 @@
 #pragma once
-#include "Tokenizer.h"
-#include "Core/Expression.h"
-#include "Commands/CommandSequence.h"
-#include "DirectivesParser.h"
-#include <set>
+
+#include "Core/Misc.h"
+#include "Parser/Tokenizer.h"
+
 #include <map>
+#include <memory>
+#include <set>
+#include <string>
 #include <unordered_map>
-#include "Core/Common.h"
+#include <vector>
+
+#include <tinyformat.h>
+
+class CAssemblerCommand;
+class Expression;
+class TextFile;
+
+struct DirectiveEntry;
+
+using DirectiveMap = std::unordered_multimap<std::wstring, const DirectiveEntry>;
 
 struct AssemblyTemplateArgument
 {
@@ -55,14 +67,12 @@ public:
 	bool isInsideTrueBlock() { return conditionStack.back().inTrueBlock; }
 	bool isInsideUnknownBlock() { return conditionStack.back().inUnknownBlock; }
 
+	void printError(const Token &token, const std::wstring &text);
+
 	template <typename... Args>
 	void printError(const Token& token, const wchar_t* text, const Args&... args)
 	{
-		errorLine = token.line;
-		Global.FileInfo.LineNumber = (int) token.line;
-		std::wstring errorText = formatString(text,args...);
-		Logger::printError(Logger::Error,errorText);
-		error = true;
+		printError(token, tfm::format(text,args...));
 	}
 
 	bool hasError() { return error; }

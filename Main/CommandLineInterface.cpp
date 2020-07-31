@@ -1,7 +1,10 @@
-#include "stdafx.h"
-#include "Core/Common.h"
+#include "Main/CommandLineInterface.h"
+
+#include "Core/Allocations.h"
 #include "Core/Assembler.h"
-#include "CommandLineInterface.h"
+#include "Core/Common.h"
+#include "Core/Misc.h"
+#include "Util/Util.h"
 
 static void printUsage(std::wstring executableName)
 {
@@ -18,12 +21,13 @@ static void printUsage(std::wstring executableName)
 	Logger::printLine(L" -strequ <NAME> <VAL>      Equivalent to \'<NAME> equ \"<VAL>\"\' in code");
 	Logger::printLine(L" -definelabel <NAME> <VAL> Equivalent to \'.definelabel <NAME>, <VAL>\' in code");
 	Logger::printLine(L" -erroronwarning           Treat all warnings like errors");
+	Logger::printLine(L" -stat                     Show area usage statistics");
 	Logger::printLine(L"");
 	Logger::printLine(L"File arguments:");
 	Logger::printLine(L" <FILE>                    Main assembly code file");
 }
 
-static bool parseArguments(const StringList& arguments, ArmipsArguments& settings)
+static bool parseArguments(const std::vector<std::wstring>& arguments, ArmipsArguments& settings)
 {
 	size_t argpos = 1;
 	bool readflags = true;
@@ -56,6 +60,11 @@ static bool parseArguments(const StringList& arguments, ArmipsArguments& setting
 			else if (arguments[argpos] == L"-erroronwarning")
 			{
 				settings.errorOnWarning = true;
+				argpos += 1;
+			}
+			else if (arguments[argpos] == L"-stat")
+			{
+				settings.showStats = true;
 				argpos += 1;
 			}
 			else if (arguments[argpos] == L"-equ" && argpos + 2 < arguments.size())
@@ -104,7 +113,7 @@ static bool parseArguments(const StringList& arguments, ArmipsArguments& setting
 					return false;
 				}
 
-				def.value = formatString(L"\"%s\"", arguments[argpos + 2]);
+				def.value = tfm::format(L"\"%s\"", arguments[argpos + 2]);
 				settings.equList.push_back(def);
 				argpos += 3;
 			}
@@ -188,7 +197,7 @@ static bool parseArguments(const StringList& arguments, ArmipsArguments& setting
 
 	// turn input filename into an absolute path
 	if (settings.useAbsoluteFileNames && isAbsolutePath(settings.inputFileName) == false)
-		settings.inputFileName = formatString(L"%s/%s", getCurrentDirectory(), settings.inputFileName);
+		settings.inputFileName = tfm::format(L"%s/%s", getCurrentDirectory(), settings.inputFileName);
 
 	if (fileExists(settings.inputFileName) == false)
 	{
@@ -198,7 +207,7 @@ static bool parseArguments(const StringList& arguments, ArmipsArguments& setting
 	return true;
 }
 
-int runFromCommandLine(const StringList& arguments, ArmipsArguments settings)
+int runFromCommandLine(const std::vector<std::wstring>& arguments, ArmipsArguments settings)
 {
 	if (parseArguments(arguments, settings) == false)
 	{

@@ -1,5 +1,9 @@
 #pragma once
+
 #include "Commands/CAssemblerCommand.h"
+
+#include <memory>
+#include <vector>
 
 class Label;
 
@@ -7,7 +11,7 @@ class CommandSequence: public CAssemblerCommand
 {
 public:
 	CommandSequence();
-	virtual bool Validate();
+	bool Validate(const ValidateState &state) override;
 	virtual void Encode() const;
 	virtual void writeTempData(TempData& tempData) const;
 	virtual void writeSymData(SymbolData& symData) const;

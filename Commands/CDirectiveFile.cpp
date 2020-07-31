@@ -1,8 +1,14 @@
-#include "stdafx.h"
 #include "Commands/CDirectiveFile.h"
+
+#include "Archs/Architecture.h"
 #include "Core/Common.h"
-#include "Util/FileClasses.h"
 #include "Core/FileManager.h"
+#include "Core/Misc.h"
+#include "Core/SymbolData.h"
+#include "Util/FileClasses.h"
+#include "Util/Util.h"
+
+#include <cstring>
 
 //
 // CDirectiveFile
@@ -54,8 +60,17 @@ void CDirectiveFile::initClose()
 	updateSection(++Global.Section);
 }
 
-bool CDirectiveFile::Validate()
+bool CDirectiveFile::Validate(const ValidateState &state)
 {
+	if (state.noFileChange)
+	{
+		if (type == Type::Close)
+			Logger::queueError(Logger::Error, L"Cannot close file within %S", state.noFileChangeDirective);
+		else
+			Logger::queueError(Logger::Error, L"Cannot open new file within %S", state.noFileChangeDirective);
+		return false;
+	}
+
 	virtualAddress = g_fileManager->getVirtualAddress();
 	Arch->NextSection();
 
@@ -102,13 +117,13 @@ void CDirectiveFile::writeTempData(TempData& tempData) const
 	switch (type)
 	{
 	case Type::Open:
-		str = formatString(L".open \"%s\",0x%08X",file->getFileName(),file->getOriginalHeaderSize());
+		str = tfm::format(L".open \"%s\",0x%08X",file->getFileName(),file->getOriginalHeaderSize());
 		break;
 	case Type::Create:
-		str = formatString(L".create \"%s\",0x%08X",file->getFileName(),file->getOriginalHeaderSize());
+		str = tfm::format(L".create \"%s\",0x%08X",file->getFileName(),file->getOriginalHeaderSize());
 		break;
 	case Type::Copy:
-		str = formatString(L".open \"%s\",\"%s\",0x%08X",file->getOriginalFileName(),
+		str = tfm::format(L".open \"%s\",\"%s\",0x%08X",file->getOriginalFileName(),
 			file->getFileName(),file->getOriginalHeaderSize());
 		break;
 	case Type::Close:
@@ -164,7 +179,7 @@ void CDirectivePosition::exec() const
 	}
 }
 
-bool CDirectivePosition::Validate()
+bool CDirectivePosition::Validate(const ValidateState &state)
 {
 	virtualAddress = g_fileManager->getVirtualAddress();
 
@@ -190,10 +205,10 @@ void CDirectivePosition::writeTempData(TempData& tempData) const
 	switch (type)
 	{
 	case Physical:
-		tempData.writeLine(virtualAddress,formatString(L".orga 0x%08X",position));
+		tempData.writeLine(virtualAddress,tfm::format(L".orga 0x%08X",position));
 		break;
 	case Virtual:
-		tempData.writeLine(virtualAddress,formatString(L".org 0x%08X",position));
+		tempData.writeLine(virtualAddress,tfm::format(L".org 0x%08X",position));
 		break;
 	}
 }
@@ -215,7 +230,7 @@ CDirectiveIncbin::CDirectiveIncbin(const std::wstring& fileName)
 	this->fileSize = ::fileSize(this->fileName);
 }
 
-bool CDirectiveIncbin::Validate()
+bool CDirectiveIncbin::Validate(const ValidateState &state)
 {
 	virtualAddress = g_fileManager->getVirtualAddress();
 
@@ -274,7 +289,7 @@ void CDirectiveIncbin::Encode() const
 
 void CDirectiveIncbin::writeTempData(TempData& tempData) const
 {
-	tempData.writeLine(virtualAddress,formatString(L".incbin \"%s\"",fileName));
+	tempData.writeLine(virtualAddress,tfm::format(L".incbin \"%s\"",fileName));
 }
 
 void CDirectiveIncbin::writeSymData(SymbolData& symData) const
@@ -307,7 +322,7 @@ CDirectiveAlignFill::CDirectiveAlignFill(Expression& value, Expression& fillValu
 	fillExpression = fillValue;
 }
 
-bool CDirectiveAlignFill::Validate()
+bool CDirectiveAlignFill::Validate(const ValidateState &state)
 {
 	virtualAddress = g_fileManager->getVirtualAddress();
 
@@ -380,13 +395,13 @@ void CDirectiveAlignFill::writeTempData(TempData& tempData) const
 	switch (mode)
 	{
 	case AlignVirtual:
-		tempData.writeLine(virtualAddress,formatString(L".align 0x%08X",value));
+		tempData.writeLine(virtualAddress,tfm::format(L".align 0x%08X",value));
 		break;
 	case AlignPhysical:
-		tempData.writeLine(virtualAddress, formatString(L".aligna 0x%08X", value));
+		tempData.writeLine(virtualAddress, tfm::format(L".aligna 0x%08X", value));
 		break;
 	case Fill:
-		tempData.writeLine(virtualAddress,formatString(L".fill 0x%08X,0x%02X",value,fillByte));
+		tempData.writeLine(virtualAddress,tfm::format(L".fill 0x%08X,0x%02X",value,fillByte));
 		break;
 	}
 }
@@ -411,7 +426,7 @@ void CDirectiveAlignFill::writeSymData(SymbolData& symData) const
 CDirectiveSkip::CDirectiveSkip(Expression& expression)
 	: expression(expression) {}
 
-bool CDirectiveSkip::Validate()
+bool CDirectiveSkip::Validate(const ValidateState &state)
 {
 	virtualAddress = g_fileManager->getVirtualAddress();
 
@@ -438,7 +453,7 @@ void CDirectiveSkip::Encode() const
 
 void CDirectiveSkip::writeTempData(TempData& tempData) const
 {
-	tempData.writeLine(virtualAddress,formatString(L".skip 0x%08X",value));
+	tempData.writeLine(virtualAddress,tfm::format(L".skip 0x%08X",value));
 }
 
 //
@@ -462,7 +477,7 @@ void CDirectiveHeaderSize::exec() const
 	file->seekPhysical(physicalAddress);
 }
 
-bool CDirectiveHeaderSize::Validate()
+bool CDirectiveHeaderSize::Validate(const ValidateState &state)
 {
 	virtualAddress = g_fileManager->getVirtualAddress();
 
@@ -483,7 +498,7 @@ void CDirectiveHeaderSize::Encode() const
 
 void CDirectiveHeaderSize::writeTempData(TempData& tempData) const
 {
-	tempData.writeLine(virtualAddress,formatString(L".headersize %s0x%08X",
+	tempData.writeLine(virtualAddress,tfm::format(L".headersize %s0x%08X",
 		headerSize < 0 ? L"-" : L"", headerSize < 0 ? -headerSize : headerSize));
 }
 
@@ -510,10 +525,10 @@ DirectiveObjImport::DirectiveObjImport(const std::wstring& inputName, const std:
 	}
 }
 
-bool DirectiveObjImport::Validate()
+bool DirectiveObjImport::Validate(const ValidateState &state)
 {
 	bool result = false;
-	if (ctor != nullptr && ctor->Validate())
+	if (ctor != nullptr && ctor->Validate(state))
 		result = true;
 
 	int64_t memory = g_fileManager->getVirtualAddress();

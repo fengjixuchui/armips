@@ -1,7 +1,7 @@
 #pragma once
+
+#include "Archs/MIPS/MipsOpcodes.h"
 #include "Commands/CAssemblerCommand.h"
-#include "Mips.h"
-#include "MipsOpcodes.h"
 #include "Core/Expression.h"
 
 enum class MipsRegisterType
@@ -130,7 +130,7 @@ class CMipsInstruction: public CAssemblerCommand
 public:
 	CMipsInstruction(MipsOpcodeData& opcode, MipsImmediateData& immediate, MipsRegisterData& registers);
 	~CMipsInstruction();
-	virtual bool Validate();
+	bool Validate(const ValidateState &state) override;
 	virtual void Encode() const;
 	virtual void writeTempData(TempData& tempData) const;
 private:

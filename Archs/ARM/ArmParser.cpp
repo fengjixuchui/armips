@@ -1,11 +1,15 @@
-#include "stdafx.h"
-#include "ArmParser.h"
-#include "Parser/Parser.h"
-#include "Parser/ExpressionParser.h"
-#include "Parser/DirectivesParser.h"
-#include "Util/Util.h"
-#include "Core/Common.h"
+#include "Archs/ARM/ArmParser.h"
+
+#include "Archs/ARM/Arm.h"
+#include "Archs/ARM/CArmInstruction.h"
+#include "Archs/ARM/CThumbInstruction.h"
 #include "Commands/CDirectiveFile.h"
+#include "Commands/CommandSequence.h"
+#include "Core/Common.h"
+#include "Parser/DirectivesParser.h"
+#include "Parser/ExpressionParser.h"
+#include "Parser/Parser.h"
+#include "Util/Util.h"
 
 #define CHECK(exp) if (!(exp)) return false;
 
@@ -34,20 +38,20 @@ const ArmRegisterDescriptor armCopNumbers[] = {
 std::unique_ptr<CAssemblerCommand> parseDirectiveThumb(Parser& parser, int flags)
 {
 	Arm.SetThumbMode(true);
-	return ::make_unique<ArmStateCommand>(false);
+	return std::make_unique<ArmStateCommand>(false);
 }
 
 std::unique_ptr<CAssemblerCommand> parseDirectiveArm(Parser& parser, int flags)
 {
 	Arm.SetThumbMode(false);
-	return ::make_unique<ArmStateCommand>(true);
+	return std::make_unique<ArmStateCommand>(true);
 }
 
 std::unique_ptr<CAssemblerCommand> parseDirectivePool(Parser& parser, int flags)
 {
-	auto seq = ::make_unique<CommandSequence>();
-	seq->addCommand(::make_unique<CDirectiveAlignFill>(4,CDirectiveAlignFill::AlignVirtual));
-	seq->addCommand(::make_unique<ArmPoolCommand>());
+	auto seq = std::make_unique<CommandSequence>();
+	seq->addCommand(std::make_unique<CDirectiveAlignFill>(4,CDirectiveAlignFill::AlignVirtual));
+	seq->addCommand(std::make_unique<ArmPoolCommand>());
 
 	return seq;
 }
@@ -68,7 +72,7 @@ std::unique_ptr<CAssemblerCommand> parseDirectiveMsg(Parser& parser, int flags)
 		return nullptr;
 
 	return parser.parseTemplate(msgTemplate, {
-		{ L"%after%", Global.symbolTable.getUniqueLabelName() },
+		{ L"%after%", Global.symbolTable.getUniqueLabelName(true) },
 		{ L"%text%", text.toString() },
 		{ L"%alignment%", Arm.GetThumbMode() == true ? L"2" : L"4" }
 	});
@@ -652,7 +656,7 @@ std::unique_ptr<CArmInstruction> ArmParser::parseArmOpcode(Parser& parser)
 			if (parseArmParameters(parser,ArmOpcodes[z],vars) == true)
 			{
 				// success, return opcode
-				return ::make_unique<CArmInstruction>(ArmOpcodes[z],vars);
+				return std::make_unique<CArmInstruction>(ArmOpcodes[z],vars);
 			}
 
 			parser.getTokenizer()->setPosition(tokenPos);
@@ -742,17 +746,14 @@ std::unique_ptr<CThumbInstruction> ArmParser::parseThumbOpcode(Parser& parser)
 		if ((ThumbOpcodes[z].flags & THUMB_ARM9) && Arm.getVersion() == AARCH_GBA)
 			continue;
 
-		// todo: save as wchar
-		std::wstring name = convertUtf8ToWString(ThumbOpcodes[z].name);
-
-		if (stringValue == name)
+		if (stringValue == ThumbOpcodes[z].name)
 		{
 			TokenizerPosition tokenPos = parser.getTokenizer()->getPosition();
 			
 			if (parseThumbParameters(parser,ThumbOpcodes[z],vars) == true)
 			{
 				// success, return opcode
-				return ::make_unique<CThumbInstruction>(ThumbOpcodes[z],vars);
+				return std::make_unique<CThumbInstruction>(ThumbOpcodes[z],vars);
 			}
 
 			parser.getTokenizer()->setPosition(tokenPos);
@@ -761,9 +762,9 @@ std::unique_ptr<CThumbInstruction> ArmParser::parseThumbOpcode(Parser& parser)
 	}
 
 	if (paramFail == true)
-		parser.printError(token,L"THUMB parameter failure");
+		parser.printError(token,L"THUMB parameter failure in %S",stringValue);
 	else
-		parser.printError(token,L"Invalid THUMB opcode");
+		parser.printError(token,L"Invalid THUMB opcode: %S",stringValue);
 	
 	return nullptr;
 }

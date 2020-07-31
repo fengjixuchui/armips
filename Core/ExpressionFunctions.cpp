@@ -1,9 +1,30 @@
-#include "stdafx.h"
-#include "ExpressionFunctions.h"
-#include "Misc.h"
-#include "Common.h"
+#include "Core/ExpressionFunctions.h"
+
+#include "Core/Assembler.h"
+#include "Core/Common.h"
+#include "Core/Expression.h"
+#include "Core/FileManager.h"
+#include "Core/Misc.h"
+#include "Util/Util.h"
+
+#include <cmath>
+
 #if ARMIPS_REGEXP
 #include <regex>
+#endif
+
+#if defined(__clang__)
+#if __has_feature(cxx_exceptions)
+#define ARMIPS_EXCEPTIONS 1
+#else
+#define ARMIPS_EXCEPTIONS 0
+#endif
+#elif defined(_MSC_VER) && defined(_CPPUNWIND)
+#define ARMIPS_EXCEPTIONS 1
+#elif defined(__EXCEPTIONS) || defined(__cpp_exceptions)
+#define ARMIPS_EXCEPTIONS 1
+#else
+#define ARMIPS_EXCEPTIONS 0
 #endif
 
 bool getExpFuncParameter(const std::vector<ExpressionValue>& parameters, size_t index, int64_t& dest,
@@ -110,10 +131,10 @@ ExpressionValue expFuncToString(const std::wstring& funcName, const std::vector<
 		result.strValue = parameters[0].strValue;
 		break;
 	case ExpressionValueType::Integer:
-		result.strValue = formatString(L"%d",parameters[0].intValue);
+		result.strValue = tfm::format(L"%d",parameters[0].intValue);
 		break;
 	case ExpressionValueType::Float:
-		result.strValue = formatString(L"%#.17g",parameters[0].floatValue);
+		result.strValue = tfm::format(L"%#.17g",parameters[0].floatValue);
 		break;
 	default:
 		return result;
@@ -129,7 +150,7 @@ ExpressionValue expFuncToHex(const std::wstring& funcName, const std::vector<Exp
 	GET_PARAM(parameters,0,value);
 	GET_OPTIONAL_PARAM(parameters,1,digits,8);
 
-	return ExpressionValue(formatString(L"%0*X",digits,value));
+	return ExpressionValue(tfm::format(L"%0*X",digits,value));
 }
 
 ExpressionValue expFuncInt(const std::wstring& funcName, const std::vector<ExpressionValue>& parameters)
@@ -511,22 +532,31 @@ ExpressionValue expFuncReadAscii(const std::wstring& funcName, const std::vector
 
 	file.setPos((long)start);
 
-	unsigned char* buffer = new unsigned char[length];
-	file.read(buffer,(size_t)length);
-
+	unsigned char buffer[1024];
+	bool stringTerminated = false;
 	std::wstring result;
-	for (size_t i = 0; i < (size_t) length; i++)
+
+	for (int64_t progress = 0; !stringTerminated && progress < length; progress += (int64_t) sizeof(buffer))
 	{
-		if (buffer[i] < 0x20 || buffer[i] > 0x7F)
+		const size_t bytesRead = file.read(buffer, (size_t) std::min((int64_t) sizeof(buffer), length - progress));
+
+		for (size_t i = 0; i < bytesRead; i++)
 		{
-			Logger::printError(Logger::Warning,L"%s: Non-ASCII character",funcName);
-			return ExpressionValue();
+			if (buffer[i] == 0x00)
+			{
+				stringTerminated = true;
+				break;
+			}
+
+			if (buffer[i] < 0x20 || buffer[i] > 0x7F)
+			{
+				Logger::printError(Logger::Warning, L"%s: Non-ASCII character", funcName);
+				return ExpressionValue();
+			}
+
+			result += (wchar_t) buffer[i];
 		}
-
-		result += (wchar_t) buffer[i];
 	}
-
-	delete[] buffer;
 
 	return ExpressionValue(result);
 }

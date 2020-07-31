@@ -1,8 +1,8 @@
-#include "stdafx.h"
-#include "Mips.h"
-#include "MipsParser.h"
-#include "MipsExpressionFunctions.h"
-#include "MipsElfRelocator.h"
+#include "Archs/MIPS/Mips.h"
+
+#include "Archs/MIPS/MipsElfRelocator.h"
+#include "Archs/MIPS/MipsExpressionFunctions.h"
+#include "Archs/MIPS/MipsParser.h"
 
 CMipsArchitecture Mips;
 
@@ -59,7 +59,7 @@ std::unique_ptr<IElfRelocator> CMipsArchitecture::getElfRelocator()
 	case MARCH_PS2:
 	case MARCH_PSP:
 	case MARCH_N64:
-		return ::make_unique<MipsElfRelocator>();
+		return std::make_unique<MipsElfRelocator>();
 	case MARCH_PSX:
 	case MARCH_RSP:
 	default:

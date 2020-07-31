@@ -1,9 +1,8 @@
 #pragma once
-#include "Commands/CAssemblerCommand.h"
-#include "ThumbOpcodes.h"
-#include "Arm.h"
+
+#include "Archs/ARM/Arm.h"
+#include "Archs/ARM/ThumbOpcodes.h"
 #include "Core/Expression.h"
-#include "ThumbOpcodes.h"
 
 struct ThumbOpcodeVariables {
 	ArmRegisterValue rd;
@@ -24,7 +23,7 @@ public:
 	CThumbInstruction(const tThumbOpcode& sourceOpcode, ThumbOpcodeVariables& vars);
 //	~CThumbInstruction();
 	bool Load(char* Name, char* Params);
-	virtual bool Validate();
+	bool Validate(const ValidateState &state) override;
 	virtual void Encode() const;
 	virtual void writeTempData(TempData& tempData) const;
 	size_t GetSize() { return OpcodeSize; };

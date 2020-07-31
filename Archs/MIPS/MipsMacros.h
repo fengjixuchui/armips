@@ -1,6 +1,11 @@
 #pragma once
-#include "Mips.h"
-#include "CMipsInstruction.h"
+
+#include "Commands/CAssemblerCommand.h"
+
+#include <memory>
+
+struct MipsImmediateData;
+struct MipsRegisterData;
 
 #define MIPSM_B						0x00000001
 #define MIPSM_BU					0x00000002
@@ -54,7 +59,7 @@ class MipsMacroCommand: public CAssemblerCommand
 {
 public:
 	MipsMacroCommand(std::unique_ptr<CAssemblerCommand> content, int macroFlags);
-	virtual bool Validate();
+	bool Validate(const ValidateState &state) override;
 	virtual void Encode() const;
 	virtual void writeTempData(TempData& tempData) const;
 private:

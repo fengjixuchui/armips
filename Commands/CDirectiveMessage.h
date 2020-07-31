@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Commands/CAssemblerCommand.h"
 #include "Core/Common.h"
 #include "Core/Expression.h"
@@ -8,7 +9,7 @@ class CDirectiveMessage: public CAssemblerCommand
 public:
 	enum class Type { Warning, Error, Notice };
 	CDirectiveMessage(Type type, Expression exp);
-	virtual bool Validate();
+	bool Validate(const ValidateState &state) override;
 	virtual void Encode() const {};
 	virtual void writeTempData(TempData& tempData) const { };
 private:
@@ -20,10 +21,10 @@ class CDirectiveSym: public CAssemblerCommand
 {
 public:
 	CDirectiveSym(bool enable) {enabled = enable; };
-	virtual bool Validate() { return false; };
+	bool Validate(const ValidateState &state) override { return false; }
 	virtual void Encode() const { };
 	virtual void writeTempData(TempData& tempData) const { };
-	virtual void writeSymData(SymbolData& symData) const { symData.setEnabled(enabled); }
+	virtual void writeSymData(SymbolData& symData) const;
 private:
 	bool enabled;
 };

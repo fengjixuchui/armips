@@ -1,8 +1,11 @@
-#include "stdafx.h"
-#include "MipsElfFile.h"
-#include "Core/Misc.h"
+#include "Archs/MIPS/MipsElfFile.h"
+
+#include "Archs/MIPS/Mips.h"
 #include "Core/Common.h"
+#include "Core/Misc.h"
+#include "Core/SymbolData.h"
 #include "Util/CRC.h"
+#include "Util/Util.h"
 
 MipsElfFile::MipsElfFile()
 {
@@ -291,7 +294,7 @@ DirectiveLoadMipsElf::DirectiveLoadMipsElf(const std::wstring& inputName, const 
 	g_fileManager->addFile(file);
 }
 
-bool DirectiveLoadMipsElf::Validate()
+bool DirectiveLoadMipsElf::Validate(const ValidateState &state)
 {
 	Arch->NextSection();
 	g_fileManager->openFile(file,true);
@@ -307,9 +310,9 @@ void DirectiveLoadMipsElf::writeTempData(TempData& tempData) const
 {
 	if (outputName.empty())
 	{
-		tempData.writeLine(g_fileManager->getVirtualAddress(),formatString(L".loadelf \"%s\"",inputName));
+		tempData.writeLine(g_fileManager->getVirtualAddress(),tfm::format(L".loadelf \"%s\"",inputName));
 	} else {
-		tempData.writeLine(g_fileManager->getVirtualAddress(),formatString(L".loadelf \"%s\",\"%s\"",
+		tempData.writeLine(g_fileManager->getVirtualAddress(),tfm::format(L".loadelf \"%s\",\"%s\"",
 			inputName,outputName));
 	}
 }

@@ -1,19 +1,23 @@
-#include "stdafx.h"
-#include "ElfFile.h"
-#include <vector>
-#include <algorithm>
+#include "Core/ELF/ElfFile.h"
+
 #include "Core/Misc.h"
 
-#ifndef _WIN32
-#include <strings.h>
-#define _stricmp strcasecmp
-#endif
+#include <algorithm>
+#include <cctype>
+#include <cstring>
+#include <vector>
 
 static bool stringEqualInsensitive(const std::string& a, const std::string& b)
 {
 	if (a.size() != b.size())
 		return false;
-	return _stricmp(a.c_str(),b.c_str()) == 0;
+
+	auto compare = [](char c1, char c2)
+	{
+		return std::tolower(c1) == std::tolower(c2);
+	};
+
+	return std::equal(a.begin(), a.end(), b.begin(), compare);
 }
 
 bool compareSection(ElfSection* a, ElfSection* b)
@@ -32,7 +36,7 @@ void ElfSection::setOwner(ElfSegment* segment)
 	owner = segment;
 }
 
-void ElfSection::writeHeader(ByteArray& data, int pos, Endianness endianness)
+void ElfSection::writeHeader(ByteArray& data, size_t pos, Endianness endianness)
 {
 	data.replaceDoubleWord(pos + 0x00, header.sh_name, endianness);
 	data.replaceDoubleWord(pos + 0x04, header.sh_type, endianness);
@@ -143,7 +147,7 @@ void ElfSegment::writeData(ByteArray& output)
 	output.append(data);
 }
 
-void ElfSegment::writeHeader(ByteArray& data, int pos, Endianness endianness)
+void ElfSegment::writeHeader(ByteArray& data, size_t pos, Endianness endianness)
 {
 	data.replaceDoubleWord(pos + 0x00, header.p_type, endianness);
 	data.replaceDoubleWord(pos + 0x04, header.p_offset, endianness);
@@ -165,7 +169,7 @@ int ElfSegment::findSection(const std::string& name)
 	for (size_t i = 0; i < sections.size(); i++)
 	{
 		if (stringEqualInsensitive(name,sections[i]->getName()))
-			return i;
+			return (int)i;
 	}
 
 	return -1;
@@ -274,7 +278,7 @@ int ElfFile::findSegmentlessSection(const std::string& name)
 	for (size_t i = 0; i < segmentlessSections.size(); i++)
 	{
 		if (stringEqualInsensitive(name,segmentlessSections[i]->getName()))
-			return i;
+			return (int)i;
 	}
 
 	return -1;
@@ -299,7 +303,7 @@ void ElfFile::loadElfHeader()
 	fileHeader.e_shstrndx = fileData.getWord(0x32, endianness);
 }
 
-void ElfFile::writeHeader(ByteArray& data, int pos, Endianness endianness)
+void ElfFile::writeHeader(ByteArray& data, size_t pos, Endianness endianness)
 {
 	memcpy(&fileData[0], fileHeader.e_ident, sizeof(fileHeader.e_ident));
 	data.replaceWord(pos + 0x10, fileHeader.e_type, endianness);
@@ -317,7 +321,7 @@ void ElfFile::writeHeader(ByteArray& data, int pos, Endianness endianness)
 	data.replaceWord(pos + 0x32, fileHeader.e_shstrndx, endianness);
 }
 
-void ElfFile::loadProgramHeader(Elf32_Phdr& header, ByteArray& data, int pos)
+void ElfFile::loadProgramHeader(Elf32_Phdr& header, ByteArray& data, size_t pos)
 {
 	Endianness endianness = getEndianness();
 	header.p_type   = data.getDoubleWord(pos + 0x00, endianness);
@@ -330,7 +334,7 @@ void ElfFile::loadProgramHeader(Elf32_Phdr& header, ByteArray& data, int pos)
 	header.p_align  = data.getDoubleWord(pos + 0x1C, endianness);
 }
 
-void ElfFile::loadSectionHeader(Elf32_Shdr& header, ByteArray& data, int pos)
+void ElfFile::loadSectionHeader(Elf32_Shdr& header, ByteArray& data, size_t pos)
 {
 	Endianness endianness = getEndianness();
 	header.sh_name      = data.getDoubleWord(pos + 0x00, endianness);
@@ -364,7 +368,7 @@ bool ElfFile::load(ByteArray& data, bool sort)
 	// load segments
 	for (size_t i = 0; i < fileHeader.e_phnum; i++)
 	{
-		int pos = fileHeader.e_phoff+i*fileHeader.e_phentsize;
+		size_t pos = fileHeader.e_phoff+i*fileHeader.e_phentsize;
 		
 		Elf32_Phdr sectionHeader;
 		loadProgramHeader(sectionHeader, fileData, pos);
@@ -377,7 +381,7 @@ bool ElfFile::load(ByteArray& data, bool sort)
 	// load sections and assign them to segments
 	for (int i = 0; i < fileHeader.e_shnum; i++)
 	{
-		int pos = fileHeader.e_shoff+i*fileHeader.e_shentsize;
+		size_t pos = fileHeader.e_shoff+i*fileHeader.e_shentsize;
 
 		Elf32_Shdr sectionHeader;
 		loadSectionHeader(sectionHeader, fileData, pos);
@@ -480,13 +484,13 @@ void ElfFile::save(const std::wstring&fileName)
 	writeHeader(fileData, 0, endianness);
 	for (size_t i = 0; i < segments.size(); i++)
 	{
-		int pos = fileHeader.e_phoff+i*fileHeader.e_phentsize;
+		size_t pos = fileHeader.e_phoff+i*fileHeader.e_phentsize;
 		segments[i]->writeHeader(fileData, pos, endianness);
 	}
 	
 	for (size_t i = 0; i < sections.size(); i++)
 	{
-		int pos = fileHeader.e_shoff+i*fileHeader.e_shentsize;
+		size_t pos = fileHeader.e_shoff+i*fileHeader.e_shentsize;
 		sections[i]->writeHeader(fileData, pos, endianness);
 	}
 
@@ -507,7 +511,7 @@ bool ElfFile::getSymbol(Elf32_Sym& symbol, size_t index)
 		return false;
 
 	ByteArray &data = symTab->getData();
-	int pos = index*sizeof(Elf32_Sym);
+	size_t pos = index*sizeof(Elf32_Sym);
 	Endianness endianness = getEndianness();
 	symbol.st_name  = data.getDoubleWord(pos + 0x00, endianness);
 	symbol.st_value = data.getDoubleWord(pos + 0x04, endianness);

@@ -1,7 +1,14 @@
 #pragma once
+
+#include "Util/ByteArray.h"
+#include "Util/FileClasses.h"
+
+#include <memory>
 #include <vector>
-#include "../Util/FileClasses.h"
-#include "SymbolData.h"
+
+class SymbolData;
+
+struct SymDataModuleInfo;
 
 class AssemblerFile
 {
@@ -81,6 +88,7 @@ public:
 	bool seekPhysical(int64_t physicalAddress);
 	bool advanceMemory(size_t bytes);
 	std::shared_ptr<AssemblerFile> getOpenFile() { return activeFile; };
+	int64_t getOpenFileID();
 	void setEndianness(Endianness endianness) { this->endianness = endianness; };
 	Endianness getEndianness() { return endianness; }
 private:

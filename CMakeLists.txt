@@ -1,30 +1,63 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.13)
 project(armips) 
 
 option(ARMIPS_REGEXP "Enable regexp expression functions" ON)
 
-if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU|Clang")
-	if(${CMAKE_SYSTEM_NAME} MATCHES "Haiku" OR WIIU)
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wno-uninitialized")
-	else()
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -std=c++11 -Wall -Wno-uninitialized -Wno-unused-parameter")
+# Helper function to set common parameters for a target
+function(init_target TARGET_NAME)
+	set_target_properties(${TARGET_NAME} PROPERTIES
+		CXX_STANDARD 17
+		CXX_STANDARD_REQUIRED TRUE
+		CXX_EXTENSIONS FALSE)
+
+	target_include_directories(${TARGET_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+	if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU|Clang")
+		target_compile_options(${TARGET_NAME} PRIVATE -Wall)
+		target_compile_options(${TARGET_NAME} PRIVATE -Wno-uninitialized)
+		target_compile_options(${TARGET_NAME} PRIVATE -Wno-unused-parameter)
+
+		if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Haiku" AND NOT WIIU)
+			find_package(Threads REQUIRED)
+			target_link_libraries(${TARGET_NAME} PRIVATE Threads::Threads)
+		endif()
 	endif()
+
+	if (ARMIPS_REGEXP)
+		target_compile_definitions(${TARGET_NAME} PRIVATE ARMIPS_REGEXP=1)
+	endif()
+
+	if (WIN32)
+		if (MSVC)
+			target_compile_definitions(${TARGET_NAME} PRIVATE UNICODE _UNICODE)
+			target_compile_definitions(${TARGET_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
+		else()
+			target_compile_options(${TARGET_NAME} PRIVATE -municode)
+			target_link_options(${TARGET_NAME} PRIVATE -municode)
+		endif()
+	endif()
+endfunction()
+
+# Helper function to automatically set source groups for all source files
+function(armips_target_sources TARGET SCOPE)
+	target_sources("${TARGET}" "${SCOPE}" ${ARGN})
+	source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${ARGN})
+endfunction()
+
+# tinyformat
+add_library(tinyformat INTERFACE)
+target_include_directories(tinyformat INTERFACE ext/tinyformat)
+
+# libarmips
+add_library(armips STATIC)
+init_target(armips)
+target_link_libraries(armips PUBLIC tinyformat)
+
+if (WIN32)
+	target_link_libraries(armips PUBLIC shlwapi)
 endif()
 
-if(MSVC)
-	add_definitions(-DUNICODE -D_UNICODE)
-elseif(MINGW)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -municode")
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
-endif()
-
-if(ARMIPS_REGEXP)
-	add_definitions(-DARMIPS_REGEXP=1)
-endif()
-
-include_directories(.)
-
-add_library(armips STATIC
+armips_target_sources(armips PRIVATE
 	Archs/Architecture.h
 	Archs/Architecture.cpp
 
@@ -88,6 +121,8 @@ add_library(armips STATIC
 	Core/ELF/ElfRelocator.h
 	Core/ELF/ElfFile.cpp
 	Core/ELF/ElfFile.h
+	Core/Allocations.cpp
+	Core/Allocations.h
 	Core/Assembler.cpp
 	Core/Assembler.h
 	Core/Common.cpp
@@ -104,8 +139,6 @@ add_library(armips STATIC
 	Core/SymbolData.h
 	Core/SymbolTable.cpp
 	Core/SymbolTable.h
-
-	ext/tinyformat/tinyformat.h
 
 	Parser/DirectivesParser.cpp
 	Parser/DirectivesParser.h
@@ -128,39 +161,37 @@ add_library(armips STATIC
 	Util/Util.h
 )
 
-add_executable(armips-bin
-	Main/CommandLineInterface.cpp
-	Main/CommandLineInterface.h
-	Main/main.cpp
-	Main/Tests.cpp
-	Main/Tests.h
-	stdafx.cpp
-	stdafx.h
-)
-# workaround library and executable having same name
+# armips-bin
+add_executable(armips-bin)
+init_target(armips-bin)
 set_target_properties(armips-bin PROPERTIES OUTPUT_NAME armips)
+target_link_libraries(armips-bin PRIVATE armips)
 
-add_executable(armipstests
+armips_target_sources(armips-bin PRIVATE
 	Main/CommandLineInterface.cpp
 	Main/CommandLineInterface.h
 	Main/main.cpp
 	Main/Tests.cpp
 	Main/Tests.h
-	stdafx.cpp
-	stdafx.h
 )
 
+# tests
+add_executable(armipstests)
+init_target(armipstests)
 target_compile_definitions(armipstests PUBLIC ARMIPS_TESTS)
+target_link_libraries(armipstests PRIVATE armips)
 
-target_link_libraries(armips-bin armips)
-target_link_libraries(armipstests armips)
+armips_target_sources(armipstests PRIVATE
+	Main/CommandLineInterface.cpp
+	Main/CommandLineInterface.h
+	Main/main.cpp
+	Main/Tests.cpp
+	Main/Tests.h
+)
 
-if(WIN32)
-	target_link_libraries(armips-bin shlwapi)
-	target_link_libraries(armipstests shlwapi)
-endif(WIN32)
+enable_testing()
+add_test(NAME armipstests COMMAND armipstests ${CMAKE_CURRENT_SOURCE_DIR}/Tests)
 
-if(MINGW)
-	target_link_libraries(armips-bin -lstdc++)
-	target_link_libraries(armipstests -lstdc++)
-endif(MINGW)
+# install
+install(TARGETS armips-bin RUNTIME DESTINATION .)
+install(FILES Readme.md DESTINATION .)

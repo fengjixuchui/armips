@@ -1,7 +1,24 @@
-#include "stdafx.h"
-#include "Expression.h"
-#include "Common.h"
-#include "ExpressionFunctions.h"
+#include "Core/Expression.h"
+
+#include "Archs/Architecture.h"
+#include "Core/Common.h"
+#include "Core/ExpressionFunctions.h"
+#include "Core/FileManager.h"
+#include "Core/Misc.h"
+#include "Util/Util.h"
+
+namespace
+{
+	std::wstring to_wstring(int64_t value)
+	{
+		return tfm::format(L"%d", value);
+	}
+
+	std::wstring to_wstring(double value)
+	{
+		return tfm::format(L"%#.17g", value);
+	}
+}
 
 enum class ExpressionValueCombination
 {
@@ -849,7 +866,7 @@ static std::wstring escapeString(const std::wstring& text)
 	replaceAll(result,LR"(\)",LR"(\\)");
 	replaceAll(result,LR"(")",LR"(\")");
 
-	return formatString(LR"("%s")",text);
+	return tfm::format(LR"("%s")",text);
 }
 
 std::wstring ExpressionInternal::formatFunctionCall()
@@ -871,9 +888,9 @@ std::wstring ExpressionInternal::toString()
 	switch (type)
 	{
 	case OperatorType::Integer:
-		return formatString(L"%d",intValue);
+		return tfm::format(L"%d",intValue);
 	case OperatorType::Float:
-		return formatString(L"%g",floatValue);
+		return tfm::format(L"%g",floatValue);
 	case OperatorType::Identifier:
 		return strValue;
 	case OperatorType::String:
@@ -881,51 +898,51 @@ std::wstring ExpressionInternal::toString()
 	case OperatorType::MemoryPos:
 		return L".";
 	case OperatorType::Add:
-		return formatString(L"(%s + %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s + %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::Sub:
-		return formatString(L"(%s - %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s - %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::Mult:
-		return formatString(L"(%s * %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s * %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::Div:
-		return formatString(L"(%s / %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s / %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::Mod:
-		return formatString(L"(%s %% %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s %% %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::Neg:
-		return formatString(L"(-%s)",children[0]->toString());
+		return tfm::format(L"(-%s)",children[0]->toString());
 	case OperatorType::LogNot:
-		return formatString(L"(!%s)",children[0]->toString());
+		return tfm::format(L"(!%s)",children[0]->toString());
 	case OperatorType::BitNot:
-		return formatString(L"(~%s)",children[0]->toString());
+		return tfm::format(L"(~%s)",children[0]->toString());
 	case OperatorType::LeftShift:
-		return formatString(L"(%s << %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s << %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::RightShift:
-		return formatString(L"(%s >> %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s >> %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::Less:
-		return formatString(L"(%s < %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s < %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::Greater:
-		return formatString(L"(%s > %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s > %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::LessEqual:
-		return formatString(L"(%s <= %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s <= %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::GreaterEqual:
-		return formatString(L"(%s >= %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s >= %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::Equal:
-		return formatString(L"(%s == %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s == %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::NotEqual:
-		return formatString(L"(%s != %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s != %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::BitAnd:
-		return formatString(L"(%s & %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s & %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::BitOr:
-		return formatString(L"(%s | %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s | %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::LogAnd:
-		return formatString(L"(%s && %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s && %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::LogOr:
-		return formatString(L"(%s || %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s || %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::Xor:
-		return formatString(L"(%s ^ %s)",children[0]->toString(),children[1]->toString());
+		return tfm::format(L"(%s ^ %s)",children[0]->toString(),children[1]->toString());
 	case OperatorType::TertiaryIf:
-		return formatString(L"(%s ? %s : %s)",children[0]->toString(),children[1]->toString(),children[2]->toString());
+		return tfm::format(L"(%s ? %s : %s)",children[0]->toString(),children[1]->toString(),children[2]->toString());
 	case OperatorType::ToString:
-		return formatString(L"(%c%s)",L'\U000000B0',children[0]->toString());
+		return tfm::format(L"(%c%s)",L'\U000000B0',children[0]->toString());
 	case OperatorType::FunctionCall:
 		return formatFunctionCall();
 	default:
@@ -963,6 +980,45 @@ void Expression::replaceMemoryPos(const std::wstring& identifierName)
 {
 	if (expression != nullptr)
 		expression->replaceMemoryPos(identifierName);
+}
+
+bool Expression::evaluateString(std::wstring &dest, bool convert)
+{
+	if (expression == nullptr)
+		return false;
+
+	ExpressionValue value = expression->evaluate();
+	if (convert && value.isInt())
+	{
+		dest = to_wstring(value.intValue);
+		return true;
+	}
+
+	if (convert && value.isFloat())
+	{
+		dest = to_wstring(value.floatValue);
+		return true;
+	}
+
+	if (value.isString() == false)
+		return false;
+
+	dest = value.strValue;
+	return true;
+}
+
+bool Expression::evaluateIdentifier(std::wstring &dest)
+{
+	if (expression == nullptr || expression->isIdentifier() == false)
+		return false;
+
+	dest = expression->getStringValue();
+	return true;
+}
+
+std::wstring Expression::toString()
+{
+	return expression != nullptr ? expression->toString() : L"";
 }
 
 Expression createConstExpression(int64_t value)

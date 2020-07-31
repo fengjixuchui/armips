@@ -1,17 +1,20 @@
-#include "stdafx.h"
-#include "CommandLineInterface.h"
-#include "Tests.h"
-#include "Util/Util.h"
-#include "Core/Common.h"
+#include "Main/Tests.h"
+
 #include "Core/Assembler.h"
+#include "Core/Common.h"
+#include "Core/Misc.h"
+#include "Main/CommandLineInterface.h"
+#include "Util/Util.h"
+
+#include <cstring>
 
 #ifndef _WIN32
 #include <dirent.h>
 #endif
 
-StringList TestRunner::listSubfolders(const std::wstring& dir)
+std::vector<std::wstring> TestRunner::listSubfolders(const std::wstring& dir)
 {
-	StringList result;
+	std::vector<std::wstring> result;
 	
 #ifdef _WIN32
 	WIN32_FIND_DATAW findFileData;
@@ -115,11 +118,11 @@ void TestRunner::restoreConsole()
 #endif
 }
 
-StringList TestRunner::getTestsList(const std::wstring& dir, const std::wstring& prefix)
+std::vector<std::wstring> TestRunner::getTestsList(const std::wstring& dir, const std::wstring& prefix)
 {
-	StringList tests;
+	std::vector<std::wstring> tests;
 
-	StringList dirs = listSubfolders(dir+prefix);
+	std::vector<std::wstring> dirs = listSubfolders(dir+prefix);
 	for (std::wstring& dirName: dirs)
 	{
 		std::wstring testName = prefix + dirName;
@@ -131,7 +134,7 @@ StringList TestRunner::getTestsList(const std::wstring& dir, const std::wstring&
 				testName.erase(0,1);
 			tests.push_back(testName);
 		} else {
-			StringList subTests = getTestsList(dir,testName+L"/");
+			std::vector<std::wstring> subTests = getTestsList(dir,testName+L"/");
 			tests.insert(tests.end(),subTests.begin(),subTests.end());
 		}
 	}
@@ -145,12 +148,12 @@ bool TestRunner::executeTest(const std::wstring& dir, const std::wstring& testNa
 	changeDirectory(dir);
 
 	ArmipsArguments settings;
-	StringList errors;
+	std::vector<std::wstring> errors;
 	int expectedRetVal = 0;
 	int retVal = 0;
 	bool checkRetVal = false;
 	bool result = true;
-	StringList args;
+	std::vector<std::wstring> args;
 
 	if (fileExists(L"commandLine.txt"))
 	{
@@ -181,7 +184,7 @@ bool TestRunner::executeTest(const std::wstring& dir, const std::wstring& testNa
 
 	if (checkRetVal && retVal != expectedRetVal)
 	{
-		errorString += formatString(L"Exit code did not match: expected %S, got %S\n",expectedRetVal,retVal);
+		errorString += tfm::format(L"Exit code did not match: expected %S, got %S\n",expectedRetVal,retVal);
 		result = false;
 	}
 
@@ -190,7 +193,7 @@ bool TestRunner::executeTest(const std::wstring& dir, const std::wstring& testNa
 	{
 		TextFile f;
 		f.open(L"expected.txt",TextFile::Read);
-		StringList expectedErrors = f.readAll();
+		std::vector<std::wstring> expectedErrors = f.readAll();
 
 		if (errors.size() == expectedErrors.size())
 		{
@@ -198,7 +201,7 @@ bool TestRunner::executeTest(const std::wstring& dir, const std::wstring& testNa
 			{
 				if (errors[i] != expectedErrors[i])
 				{
-					errorString += formatString(L"Unexpected error: %S\n",errors[i]);
+					errorString += tfm::format(L"Unexpected error: %S\n",errors[i]);
 					result = false;
 				}
 			}
@@ -209,7 +212,7 @@ bool TestRunner::executeTest(const std::wstring& dir, const std::wstring& testNa
 		// if no errors are expected, there should be none
 		for (size_t i = 0; i < errors.size(); i++)
 		{
-			errorString += formatString(L"Unexpected error: %S\n",errors[i]);
+			errorString += tfm::format(L"Unexpected error: %S\n",errors[i]);
 			result = false;
 		}
 	}
@@ -229,11 +232,11 @@ bool TestRunner::executeTest(const std::wstring& dir, const std::wstring& testNa
 		{
 			if (memcmp(expected.data(),actual.data(),actual.size()) != 0)
 			{
-				errorString += formatString(L"Output data does not match\n");
+				errorString += tfm::format(L"Output data does not match\n");
 				result = false;
 			}
 		} else {
-			errorString += formatString(L"Output data size does not match\n");
+			errorString += tfm::format(L"Output data size does not match\n");
 			result = false;
 		}
 	}
@@ -246,7 +249,7 @@ bool TestRunner::runTests(const std::wstring& dir, const std::wstring& executabl
 {
 	this->executableName = executableName;
 
-	StringList tests = getTestsList(dir);
+	std::vector<std::wstring> tests = getTestsList(dir);
 	if (tests.empty())
 	{
 		Logger::printLine(L"No tests to run");
@@ -260,7 +263,7 @@ bool TestRunner::runTests(const std::wstring& dir, const std::wstring& executabl
 	{
 		changeConsoleColor(ConsoleColors::White);
 
-		std::wstring line = formatString(L"Test %d of %d, %s:",i+1,tests.size(),tests[i]);
+		std::wstring line = tfm::format(L"Test %d of %d, %s:",i+1,tests.size(),tests[i]);
 		Logger::print(L"%-50s",line);
 
 		std::wstring path = dir + L"/" + tests[i];

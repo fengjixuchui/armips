@@ -1,7 +1,12 @@
-#include "stdafx.h"
 #include "Util/FileClasses.h"
+
 #include "Core/Common.h"
-#include "stdafx.h"
+#include "Util/Util.h"
+
+#include <cassert>
+#include <cstring>
+
+#include <tinyformat.h>
 
 const wchar_t SjisToUnicodeTable1[] =
 {
@@ -871,7 +876,7 @@ wchar_t TextFile::readCharacter()
 				value &= 0x0F;
 			} else if (value > 0x7F)
 			{
-				errorText = formatString(L"One or more invalid UTF-8 characters in this file");
+				errorText = tfm::format(L"One or more invalid UTF-8 characters in this file");
 			}
 
 			for (int i = 0; i < extraBytes; i++)
@@ -881,7 +886,7 @@ wchar_t TextFile::readCharacter()
 
 				if ((b & 0xC0) != 0x80)
 				{
-					errorText = formatString(L"One or more invalid UTF-8 characters in this file");
+					errorText = tfm::format(L"One or more invalid UTF-8 characters in this file");
 				}
 
 				value = (value << 6) | (b & 0x3F);
@@ -913,7 +918,7 @@ wchar_t TextFile::readCharacter()
 			value = sjisToUnicode(sjis);
 			if (value == (wchar_t)-1)
 			{
-				errorText = formatString(L"One or more invalid Shift-JIS characters in this file");
+				errorText = tfm::format(L"One or more invalid Shift-JIS characters in this file");
 			}
 		}
 		break;
@@ -922,7 +927,7 @@ wchar_t TextFile::readCharacter()
 		contentPos++;
 		break;
 	case GUESS:
-		errorText = formatString(L"Cannot read from GUESS encoding");
+		errorText = tfm::format(L"Cannot read from GUESS encoding");
 		break;
 	}
 
@@ -959,9 +964,9 @@ std::wstring TextFile::readLine()
 	return result;
 }
 
-StringList TextFile::readAll()
+std::vector<std::wstring> TextFile::readAll()
 {
-	StringList result;
+	std::vector<std::wstring> result;
 	while (!atEnd())
 	{
 		result.push_back(readLine());
@@ -1088,7 +1093,7 @@ void TextFile::writeLine(const std::string& line)
 	writeLine(line.c_str());
 }
 
-void TextFile::writeLines(StringList& list)
+void TextFile::writeLines(std::vector<std::wstring>& list)
 {
 	for (size_t i = 0; i < list.size(); i++)
 	{
@@ -1116,9 +1121,12 @@ const EncodingValue encodingValues[] = {
 
 TextFile::Encoding getEncodingFromString(const std::wstring& str)
 {
+	auto lowerCase = str;
+	std::transform(lowerCase.begin(), lowerCase.end(), lowerCase.begin(), &::towlower);
+
 	for (size_t i = 0; i < sizeof(encodingValues)/sizeof(EncodingValue); i++)
 	{
-		if (str.compare(encodingValues[i].name) == 0)
+		if (lowerCase.compare(encodingValues[i].name) == 0)
 			return encodingValues[i].value;
 	}
 

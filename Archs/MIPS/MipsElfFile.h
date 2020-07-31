@@ -1,8 +1,8 @@
 #pragma once
+
+#include "Commands/CAssemblerCommand.h"
 #include "Core/ELF/ElfFile.h"
 #include "Core/FileManager.h"
-#include "Commands/CAssemblerCommand.h"
-#include "Mips.h"
 
 class MipsElfFile: public AssemblerFile
 {
@@ -43,7 +43,7 @@ class DirectiveLoadMipsElf: public CAssemblerCommand
 public:
 	DirectiveLoadMipsElf(const std::wstring& fileName);
 	DirectiveLoadMipsElf(const std::wstring& inputName, const std::wstring& outputName);
-	virtual bool Validate();
+	bool Validate(const ValidateState &state) override;
 	virtual void Encode() const;
 	virtual void writeTempData(TempData& tempData) const;
 	virtual void writeSymData(SymbolData& symData) const;

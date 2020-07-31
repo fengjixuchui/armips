@@ -1,10 +1,14 @@
-#include "stdafx.h"
-#include "ElfRelocator.h"
+#include "Core/ELF/ElfRelocator.h"
+
+#include "Archs/Architecture.h"
+#include "Commands/CAssemblerLabel.h"
 #include "Core/Common.h"
 #include "Core/Misc.h"
+#include "Core/SymbolData.h"
 #include "Util/CRC.h"
 #include "Util/Util.h"
-#include "Commands/CAssemblerLabel.h"
+
+#include <cstring>
 
 struct ArFileHeader
 {
@@ -268,7 +272,7 @@ std::unique_ptr<CAssemblerCommand> ElfRelocator::generateCtor(const std::wstring
 {
 	std::unique_ptr<CAssemblerCommand> content = relocator->generateCtorStub(ctors);
 
-	auto func = ::make_unique<CDirectiveFunction>(ctorName,ctorName);
+	auto func = std::make_unique<CDirectiveFunction>(ctorName,ctorName);
 	func->setContent(std::move(content));
 	return func;
 }
@@ -498,4 +502,9 @@ void ElfRelocator::writeSymbols(SymbolData& symData) const
 			}
 		}
 	}
+}
+
+std::unique_ptr<CAssemblerCommand> IElfRelocator::generateCtorStub(std::vector<ElfRelocatorCtor> &ctors)
+{
+	return nullptr;
 }

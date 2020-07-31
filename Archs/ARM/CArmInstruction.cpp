@@ -1,8 +1,11 @@
-#include "stdafx.h"
-#include "CArmInstruction.h"
+#include "Archs/ARM/CArmInstruction.h"
+
+#include "Archs/ARM/Arm.h"
 #include "Core/Common.h"
-#include "Arm.h"
 #include "Core/FileManager.h"
+#include "Core/Misc.h"
+#include "Util/Util.h"
+
 #include <cstddef>
 
 const char ArmConditions[16][3] = {
@@ -55,7 +58,7 @@ void CArmInstruction::setPoolAddress(int64_t address)
 	Vars.Immediate = pos;
 }
 
-bool CArmInstruction::Validate()
+bool CArmInstruction::Validate(const ValidateState &state)
 {
 	RamPos = g_fileManager->getVirtualAddress();
 
@@ -558,7 +561,7 @@ void CArmInstruction::Encode() const
 				immediate = abs(immediate);
 			}
 			encoding |= (immediate << 0);
-		} else if (Opcode.flags & ARM_REGISTER)	// ... heißt der opcode nutzt shifts, mit immediates
+		} else if (Opcode.flags & ARM_REGISTER)	// ... means the opcocde uses shifts with immediates
 		{
 			if (Vars.Shift.UseShift == true)
 			{

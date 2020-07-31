@@ -1,10 +1,11 @@
-#include "stdafx.h"
 #include "Core/Common.h"
-#include <sys/stat.h>
-#include "Assembler.h"
+
 #include "Commands/CAssemblerLabel.h"
-#include "Util/Util.h"
+#include "Core/Assembler.h"
 #include "Core/FileManager.h"
+#include "Util/Util.h"
+
+#include <sys/stat.h>
 
 FileManager fileManager;
 FileManager* g_fileManager = &fileManager;

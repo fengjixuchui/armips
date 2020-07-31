@@ -1,9 +1,11 @@
-#include "stdafx.h"
 #include "Commands/CAssemblerLabel.h"
-#include "Core/Common.h"
-#include "Util/Util.h"
-#include "Core/FileManager.h"
+
 #include "Archs/ARM/Arm.h"
+#include "Core/Common.h"
+#include "Core/FileManager.h"
+#include "Core/Misc.h"
+#include "Core/SymbolData.h"
+#include "Util/Util.h"
 
 CAssemblerLabel::CAssemblerLabel(const std::wstring& name, const std::wstring& originalName)
 {
@@ -38,7 +40,7 @@ CAssemblerLabel::CAssemblerLabel(const std::wstring& name, const std::wstring& o
 	labelValue = value;
 }
 
-bool CAssemblerLabel::Validate()
+bool CAssemblerLabel::Validate(const ValidateState &state)
 {
 	bool result = false;
 	if (defined == false)
@@ -96,7 +98,7 @@ void CAssemblerLabel::Encode() const
 void CAssemblerLabel::writeTempData(TempData& tempData) const
 {
 	if (Global.symbolTable.isGeneratedLabel(label->getName()) == false)
-		tempData.writeLine(label->getValue(),formatString(L"%s:",label->getName()));
+		tempData.writeLine(label->getValue(),tfm::format(L"%s:",label->getName()));
 }
 
 void CAssemblerLabel::writeSymData(SymbolData& symData) const
@@ -113,20 +115,23 @@ void CAssemblerLabel::writeSymData(SymbolData& symData) const
 
 CDirectiveFunction::CDirectiveFunction(const std::wstring& name, const std::wstring& originalName)
 {
-	this->label = ::make_unique<CAssemblerLabel>(name,originalName);
+	this->label = std::make_unique<CAssemblerLabel>(name,originalName);
 	this->content = nullptr;
 	this->start = this->end = 0;
 }
 
-bool CDirectiveFunction::Validate()
+bool CDirectiveFunction::Validate(const ValidateState &state)
 {
 	start = g_fileManager->getVirtualAddress();
 
 	label->applyFileInfo();
-	bool result = label->Validate();
+	bool result = label->Validate(state);
 
+	ValidateState contentValidation = state;
+	contentValidation.noFileChange = true;
+	contentValidation.noFileChangeDirective = L"function";
 	content->applyFileInfo();
-	if (content->Validate())
+	if (content->Validate(contentValidation))
 		result = true;
 
 	end = g_fileManager->getVirtualAddress();

@@ -1,9 +1,11 @@
-#include "stdafx.h"
-#include "Tokenizer.h"
+#include "Parser/Tokenizer.h"
+
 #include "Core/Common.h"
 #include "Util/Util.h"
+
 #include <algorithm>
 
+#include <tinyformat.h>
 
 //
 // Tokenizer
@@ -619,7 +621,7 @@ Token FileTokenizer::loadToken()
 
 	if (pos == linePos)
 	{
-		std::wstring text = formatString(L"Invalid input '%c'",currentLine[pos]);
+		std::wstring text = tfm::format(L"Invalid input '%c'",currentLine[pos]);
 		createToken(TokenType::Invalid,1,text);
 		return std::move(token);
 	}
@@ -644,6 +646,11 @@ Token FileTokenizer::loadToken()
 	}
 
 	return std::move(token);
+}
+
+bool FileTokenizer::isInputAtEnd()
+{
+	return linePos >= currentLine.size() && input->atEnd();
 }
 
 bool FileTokenizer::init(TextFile* input)

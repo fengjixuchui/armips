@@ -1,11 +1,14 @@
-#include "stdafx.h"
-#include "MipsMacros.h"
-#include "CMipsInstruction.h"
+#include "Archs/MIPS/MipsMacros.h"
+
+#include "Archs/MIPS/CMipsInstruction.h"
+#include "Archs/MIPS/Mips.h"
+#include "Archs/MIPS/MipsOpcodes.h"
+#include "Archs/MIPS/MipsParser.h"
 #include "Core/Common.h"
-#include "Mips.h"
-#include "MipsOpcodes.h"
+#include "Core/FileManager.h"
+#include "Core/Misc.h"
 #include "Parser/Parser.h"
-#include "MipsParser.h"
+#include "Util/Util.h"
 
 MipsMacroCommand::MipsMacroCommand(std::unique_ptr<CAssemblerCommand> content, int macroFlags)
 {
@@ -14,11 +17,11 @@ MipsMacroCommand::MipsMacroCommand(std::unique_ptr<CAssemblerCommand> content, i
 	IgnoreLoadDelay = Mips.GetIgnoreDelay();
 }
 
-bool MipsMacroCommand::Validate()
+bool MipsMacroCommand::Validate(const ValidateState &state)
 {
 	int64_t memoryPos = g_fileManager->getVirtualAddress();
 	content->applyFileInfo();
-	bool result = content->Validate();
+	bool result = content->Validate(state);
 	int64_t newMemoryPos = g_fileManager->getVirtualAddress();
 
 	applyFileInfo();
@@ -56,13 +59,13 @@ std::wstring preprocessMacro(const wchar_t* text, MipsImmediateData& immediates)
 	immediates.primary.expression.replaceMemoryPos(labelName);
 	immediates.secondary.expression.replaceMemoryPos(labelName);
 
-	return formatString(L"%s: %s",labelName,text);
+	return tfm::format(L"%s: %s",labelName,text);
 }
 
 std::unique_ptr<CAssemblerCommand> createMacro(Parser& parser, const std::wstring& text, int flags, std::initializer_list<AssemblyTemplateArgument> variables)
 {
 	std::unique_ptr<CAssemblerCommand> content = parser.parseTemplate(text,variables);
-	return ::make_unique<MipsMacroCommand>(std::move(content),flags);
+	return std::make_unique<MipsMacroCommand>(std::move(content),flags);
 }
 
 std::unique_ptr<CAssemblerCommand> generateMipsMacroAbs(Parser& parser, MipsRegisterData& registers, MipsImmediateData& immediates, int flags)
@@ -257,7 +260,7 @@ std::unique_ptr<CAssemblerCommand> generateMipsMacroLoadUnaligned(Parser& parser
 		if (registers.grs.num == registers.grd.num)
 		{
 			Logger::printError(Logger::Error,L"Cannot use same register as source and destination");
-			return ::make_unique<DummyCommand>();
+			return std::make_unique<DummyCommand>();
 		}
 
 		op = type == MIPSM_W ? L"lw" : L"ld";
@@ -310,7 +313,7 @@ std::unique_ptr<CAssemblerCommand> generateMipsMacroStoreUnaligned(Parser& parse
 		if (registers.grs.num == registers.grd.num)
 		{
 			Logger::printError(Logger::Error,L"Cannot use same register as source and destination");
-			return ::make_unique<DummyCommand>();
+			return std::make_unique<DummyCommand>();
 		}
 
 		op = type == MIPSM_W ? L"sw" : L"sd";

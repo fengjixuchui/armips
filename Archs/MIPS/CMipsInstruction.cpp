@@ -1,10 +1,11 @@
-#include "stdafx.h"
-#include "CMipsInstruction.h"
+#include "Archs/MIPS/CMipsInstruction.h"
+
+#include "Archs/MIPS/Mips.h"
+#include "Archs/MIPS/MipsOpcodes.h"
+#include "Archs/MIPS/MipsParser.h"
 #include "Core/Common.h"
-#include "Mips.h"
-#include "MipsOpcodes.h"
 #include "Core/FileManager.h"
-#include "MipsParser.h"
+#include "Core/Misc.h"
 
 CMipsInstruction::CMipsInstruction(MipsOpcodeData& opcode, MipsImmediateData& immediate, MipsRegisterData& registers)
 {
@@ -81,7 +82,7 @@ int CMipsInstruction::floatToHalfFloat(int i)
 	return s | (e << 10) | (f >> 13);
 }
 
-bool CMipsInstruction::Validate()
+bool CMipsInstruction::Validate(const ValidateState &state)
 {
 	bool Result = false;
 

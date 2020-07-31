@@ -1,7 +1,10 @@
 #pragma once
-#include <vector>
-#include "Util/Util.h"
+
 #include "Util/FileClasses.h"
+
+#include <vector>
+
+#include <tinyformat.h>
 
 class Logger
 {
@@ -15,7 +18,7 @@ public:
 	template <typename... Args>
 	static void printLine(const wchar_t* text, const Args&... args)
 	{
-		std::wstring message = formatString(text,args...);
+		std::wstring message = tfm::format(text,args...);
 		printLine(message);
 	}
 
@@ -24,7 +27,7 @@ public:
 	template <typename... Args>
 	static void print(const wchar_t* text, const Args&... args)
 	{
-		std::wstring message = formatString(text,args...);
+		std::wstring message = tfm::format(text,args...);
 		print(message);
 	}
 
@@ -36,20 +39,20 @@ public:
 	template <typename... Args>
 	static void printError(ErrorType type, const wchar_t* text, const Args&... args)
 	{
-		std::wstring message = formatString(text,args...);
+		std::wstring message = tfm::format(text,args...);
 		printError(type,message);
 	}
 	
 	template <typename... Args>
 	static void queueError(ErrorType type, const wchar_t* text, const Args&... args)
 	{
-		std::wstring message = formatString(text,args...);
+		std::wstring message = tfm::format(text,args...);
 		queueError(type,message);
 	}
 
 	static void printQueue();
 	static void clearQueue() { queue.clear(); };
-	static StringList getErrors() { return errors; };
+	static std::vector<std::wstring> getErrors() { return errors; };
 	static bool hasError() { return error; };
 	static bool hasFatalError() { return fatalError; };
 	static void setErrorOnWarning(bool b) { errorOnWarning = b; };

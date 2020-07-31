@@ -1,7 +1,11 @@
-#include "stdafx.h"
 #include "Commands/CDirectiveData.h"
+
+#include "Archs/Architecture.h"
 #include "Core/Common.h"
 #include "Core/FileManager.h"
+#include "Core/Misc.h"
+#include "Core/SymbolData.h"
+#include "Util/Util.h"
 
 //
 // TableCommand
@@ -24,7 +28,7 @@ TableCommand::TableCommand(const std::wstring& fileName, TextFile::Encoding enco
 	}
 }
 
-bool TableCommand::Validate()
+bool TableCommand::Validate(const ValidateState &state)
 {
 	Global.Table = table;
 	return false;
@@ -168,7 +172,7 @@ void CDirectiveData::encodeCustom(EncodingTable& table)
 		
 		if (value.isInt())
 		{
-			customData.appendByte(value.intValue);
+			customData.appendByte((byte)value.intValue);
 		} else if (value.isString())
 		{
 			ByteArray encoded = table.encodeString(value.strValue,false);
@@ -304,7 +308,7 @@ void CDirectiveData::encodeNormal()
 	}
 }
 
-bool CDirectiveData::Validate()
+bool CDirectiveData::Validate(const ValidateState &state)
 {
 	position = g_fileManager->getVirtualAddress();
 

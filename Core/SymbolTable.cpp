@@ -1,8 +1,11 @@
-#include "stdafx.h"
 #include "Core/SymbolTable.h"
+
+#include "Core/Assembler.h"
+#include "Core/Common.h"
 #include "Util/FileClasses.h"
 #include "Util/Util.h"
-#include "Common.h"
+
+#include <tinyformat.h>
 
 const wchar_t validSymbolCharacters[] = L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.";
 
@@ -166,7 +169,7 @@ bool SymbolTable::findEquation(const std::wstring& name, int file, int section, 
 // TODO: better
 std::wstring SymbolTable::getUniqueLabelName(bool local)
 {
-	std::wstring name = formatString(L"__armips_label_%08x__",uniqueCount++);
+	std::wstring name = tfm::format(L"__armips_label_%08x__",uniqueCount++);
 	if (local)
 		name = L"@@" + name;
 
@@ -202,7 +205,7 @@ int SymbolTable::findSection(int64_t address)
 
 	for (auto& lab: labels)
 	{
-		int diff = address-lab->getValue();
+		int64_t diff = address-lab->getValue();
 		if (diff >= 0 && diff < smallestDiff)
 		{
 			smallestDiff = diff;

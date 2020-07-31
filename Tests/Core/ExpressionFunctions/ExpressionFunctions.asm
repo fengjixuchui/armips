@@ -57,7 +57,7 @@ test1	int, 3
 test1	float, 3.7
 test1	float, 3
 
-test1	frac, 3.0
+;test1	frac, 3.0 ; removed due to different number of decimals with the microsoft stl
 test1	frac, 3.7
 test1	frac, -3.7
 
@@ -98,5 +98,8 @@ test2	max,-3,3
 test2	min,-3,3
 test2	max,-3.0,3.0
 test2	min,-3.0,3.0
+
+test2	readascii,fileA,9
+test3	readascii,fileA,9,5000
 
 .close

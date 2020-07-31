@@ -1,15 +1,20 @@
-#include "stdafx.h"
-#include "Pool.h"
-#include "Arm.h"
+#include "Archs/ARM/Pool.h"
+
+#include "Archs/ARM/Arm.h"
+#include "Core/Allocations.h"
 #include "Core/Common.h"
 #include "Core/FileManager.h"
+#include "Core/Misc.h"
+#include "Core/SymbolData.h"
+
+#include <unordered_map>
 
 ArmStateCommand::ArmStateCommand(bool state)
 {
 	armstate = state;
 }
 
-bool ArmStateCommand::Validate()
+bool ArmStateCommand::Validate(const ValidateState &state)
 {
 	RamPos = g_fileManager->getVirtualAddress();
 	return false;
@@ -32,36 +37,38 @@ void ArmStateCommand::writeSymData(SymbolData& symData) const
 
 ArmPoolCommand::ArmPoolCommand()
 {
-
+	position = -1;
 }
 
-bool ArmPoolCommand::Validate()
+bool ArmPoolCommand::Validate(const ValidateState &state)
 {
+	int64_t fileID = g_fileManager->getOpenFileID();
+	if (position != -1)
+		Allocations::forgetPool(fileID, position, values.size() * 4);
 	position = g_fileManager->getVirtualAddress();
 
 	size_t oldSize = values.size();
 	values.clear();
 
+	std::unordered_map<int32_t, size_t> usedValues;
 	for (ArmPoolEntry& entry: Arm.getPoolContent())
 	{
 		size_t index = values.size();
 		
 		// try to filter redundant values, but only if
 		// we aren't in an unordinarily long validation loop
-		if (Global.validationPasses < 10)
+		if (state.passes < 10)
 		{
-			for (size_t i = 0; i < values.size(); i++)
-			{
-				if (values[i] == entry.value)
-				{
-					index = i;
-					break;
-				}
-			}
+			auto it = usedValues.find(entry.value);
+			if (it != usedValues.end())
+				index = it->second;
 		}
 
 		if (index == values.size())
+		{
+			usedValues[entry.value] = index;
 			values.push_back(entry.value);
+		}
 
 		entry.command->applyFileInfo();
 		entry.command->setPoolAddress(position+index*4);
@@ -69,6 +76,7 @@ bool ArmPoolCommand::Validate()
 
 	Arm.clearPoolContent();
 	g_fileManager->advanceMemory(values.size()*4);
+	Allocations::setPool(fileID, position, values.size() * 4);
 
 	return oldSize != values.size();
 }
@@ -87,7 +95,7 @@ void ArmPoolCommand::writeTempData(TempData& tempData) const
 	for (size_t i = 0; i < values.size(); i++)
 	{
 		int32_t value = values[i];
-		tempData.writeLine(position+i*4,formatString(L".word 0x%08X",value));
+		tempData.writeLine(position+i*4,tfm::format(L".word 0x%08X",value));
 	}
 }
 

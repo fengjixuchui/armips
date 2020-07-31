@@ -1,6 +1,9 @@
 #pragma once
-#include "../Util/FileClasses.h"
+
+#include <cstdint>
 #include <set>
+#include <string>
+#include <vector>
 
 class AssemblerFile;
 

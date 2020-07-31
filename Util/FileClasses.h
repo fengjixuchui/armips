@@ -1,6 +1,9 @@
 #pragma once
+
 #include <list>
-#include "Util.h"
+#include <vector>
+
+#include <tinyformat.h>
 
 class BinaryFile
 {
@@ -56,7 +59,7 @@ public:
 
 	wchar_t readCharacter();
 	std::wstring readLine();
-	StringList readAll();
+	std::vector<std::wstring> readAll();
 	void writeCharacter(wchar_t character);
 	void write(const wchar_t* line);
 	void write(const std::wstring& line);
@@ -66,12 +69,12 @@ public:
 	void writeLine(const std::wstring& line);
 	void writeLine(const char* line);
 	void writeLine(const std::string& line);
-	void writeLines(StringList& list);
+	void writeLines(std::vector<std::wstring>& list);
 	
 	template <typename... Args>
 	void writeFormat(const wchar_t* text, const Args&... args)
 	{
-		std::wstring message = formatString(text,args...);
+		std::wstring message = tfm::format(text,args...);
 		write(message);
 	}
 
@@ -110,14 +113,14 @@ private:
 	}
 	inline unsigned short bufGet16LE()
 	{
-		char c1 = bufGetChar();
-		char c2 = bufGetChar();
+		unsigned char c1 = bufGetChar();
+		unsigned char c2 = bufGetChar();
 		return c1 | (c2 << 8);
 	}
 	inline unsigned short bufGet16BE()
 	{
-		char c1 = bufGetChar();
-		char c2 = bufGetChar();
+		unsigned char c1 = bufGetChar();
+		unsigned char c2 = bufGetChar();
 		return c2 | (c1 << 8);
 	}
 

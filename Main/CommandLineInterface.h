@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Core/Assembler.h"
 
-int runFromCommandLine(const StringList& arguments, ArmipsArguments settings = {});
+int runFromCommandLine(const std::vector<std::wstring>& arguments, ArmipsArguments settings = {});

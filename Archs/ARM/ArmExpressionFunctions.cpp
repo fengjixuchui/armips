@@ -1,8 +1,9 @@
-#include "stdafx.h"
-#include "Core/ExpressionFunctions.h"
+#include "Archs/ARM/ArmExpressionFunctions.h"
+
+#include "Archs/ARM/Arm.h"
 #include "Core/Common.h"
-#include "ArmExpressionFunctions.h"
-#include "Arm.h"
+#include "Core/Expression.h"
+#include "Core/ExpressionFunctions.h"
 
 #define GET_PARAM(params,index,dest) \
 	if (getExpFuncParameter(params,index,dest,funcName,false) == false) \

@@ -1,9 +1,13 @@
-#include "stdafx.h"
-#include "ArmElfRelocator.h"
-#include "Util/Util.h"
-#include "Arm.h"
+#include "Archs/ARM/ArmElfRelocator.h"
+
+#include "Archs/ARM/Arm.h"
 #include "Core/Common.h"
+#include "Parser/Parser.h"
+#include "Util/Util.h"
+
 #include <algorithm>
+
+#include <tinyformat.h>
 
 inline int signExtend(int value, int bitsLength)
 {
@@ -78,7 +82,7 @@ bool ArmElfRelocator::relocateOpcode(int type, const RelocationData& data, std::
 
 			if (abs(value) >= 0x400000)
 			{
-				errors.emplace_back(formatString(L"Branch target %08X out of range",data.relocationBase));
+				errors.emplace_back(tfm::format(L"Branch target %08X out of range",data.relocationBase));
 				return false;
 			}
 
@@ -137,7 +141,7 @@ bool ArmElfRelocator::relocateOpcode(int type, const RelocationData& data, std::
 			
 			if (abs(value) >= 0x2000000)
 			{
-				errors.emplace_back(formatString(L"Branch target %08X out of range",data.relocationBase));
+				errors.emplace_back(tfm::format(L"Branch target %08X out of range",data.relocationBase));
 				return false;
 			}
 
@@ -145,7 +149,7 @@ bool ArmElfRelocator::relocateOpcode(int type, const RelocationData& data, std::
 		}
 		break;
 	default:
-		errors.emplace_back(formatString(L"Unknown ARM relocation type %d",type));
+		errors.emplace_back(tfm::format(L"Unknown ARM relocation type %d",type));
 		return false;
 	}
 
@@ -213,12 +217,12 @@ std::unique_ptr<CAssemblerCommand> ArmElfRelocator::generateCtorStub(std::vector
 		{
 			if (i != 0)
 				table += ',';
-			table += formatString(L"%s,%s+0x%08X",ctors[i].symbolName,ctors[i].symbolName,ctors[i].size);
+			table += tfm::format(L"%s,%s+0x%08X",ctors[i].symbolName,ctors[i].symbolName,ctors[i].size);
 		}
 
 		return parser.parseTemplate(ctorTemplate,{
 			{ L"%ctorTable%",		Global.symbolTable.getUniqueLabelName() },
-			{ L"%ctorTableSize%",	formatString(L"%d",ctors.size()*8) },
+			{ L"%ctorTableSize%",	tfm::format(L"%d",ctors.size()*8) },
 			{ L"%outerLoopLabel%",	Global.symbolTable.getUniqueLabelName() },
 			{ L"%innerLoopLabel%",	Global.symbolTable.getUniqueLabelName() },
 			{ L"%stubName%",		Global.symbolTable.getUniqueLabelName() },

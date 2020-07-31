@@ -1,11 +1,12 @@
-﻿#include "stdafx.h"
-#include "Core/Common.h"
-#include "Core/Assembler.h"
+﻿#include "Core/Common.h"
 #include "Archs/MIPS/Mips.h"
 #include "Commands/CDirectiveFile.h"
+#include "Core/Assembler.h"
+#include "Main/CommandLineInterface.h"
+#include "Main/Tests.h"
 #include "Util/Util.h"
-#include "CommandLineInterface.h"
-#include "Tests.h"
+
+#include <clocale>
 
 int wmain(int argc, wchar_t* argv[])
 {
@@ -20,7 +21,7 @@ int wmain(int argc, wchar_t* argv[])
 		return !runTests(argv[1], argv[0]);
 #endif
 
-	StringList arguments = getStringListFromArray(argv,argc);
+	std::vector<std::wstring> arguments = getStringListFromArray(argv,argc);
 	
 	return runFromCommandLine(arguments);
 }

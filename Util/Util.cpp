@@ -1,9 +1,11 @@
-#include "stdafx.h"
-#include "Util.h"
+#include "Util/Util.h"
+
+#include <sstream>
+
 #include <sys/stat.h>
 #ifdef _WIN32
-#include <windows.h>
 #include <shlwapi.h>
+#include <windows.h>
 #if defined(WINAPI_FAMILY) && defined(WINAPI_FAMILY_PARTITION)
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP) && WINAPI_FAMILY != WINAPI_FAMILY_DESKTOP_APP
 #define ARMIPS_WINDOWS_UWP
@@ -217,9 +219,9 @@ int64_t getDoubleBits(double value)
 	return u.i;
 }
 
-StringList getStringListFromArray(wchar_t** source, int count)
+std::vector<std::wstring> getStringListFromArray(wchar_t** source, int count)
 {
-	StringList result;
+	std::vector<std::wstring> result;
 	for (int i = 0; i < count; i++)
 	{
 		result.push_back(std::wstring(source[i]));
@@ -228,9 +230,9 @@ StringList getStringListFromArray(wchar_t** source, int count)
 	return result;
 }
 
-StringList splitString(const std::wstring& str, const wchar_t delim, bool skipEmpty)
+std::vector<std::wstring> splitString(const std::wstring& str, const wchar_t delim, bool skipEmpty)
 {
-	StringList result;
+	std::vector<std::wstring> result;
 	std::wstringstream stream(str);
 	std::wstring arg;
 	while (std::getline(stream,arg,delim))

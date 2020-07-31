@@ -1,7 +1,12 @@
 #pragma once
 
 #include <map>
-#include "Assembler.h"
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
+
+struct LabelDefinition;
 
 struct SymbolKey
 {

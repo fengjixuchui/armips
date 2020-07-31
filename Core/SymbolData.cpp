@@ -1,8 +1,9 @@
-#include "stdafx.h"
 #include "SymbolData.h"
+
+#include "Core/Common.h"
+#include "Core/Misc.h"
 #include "FileManager.h"
-#include "Misc.h"
-#include "Common.h"
+
 #include <algorithm>
 
 SymbolData::SymbolData()
@@ -64,7 +65,7 @@ void SymbolData::writeNocashSym()
 			entry.address = sym.address;
 
 			if (size != 0 && nocashSymVersion >= 2)
-				entry.text = formatString(L"%s,%08X",sym.name,size);
+				entry.text = tfm::format(L"%s,%08X",sym.name,size);
 			else
 				entry.text = sym.name;
 
@@ -82,19 +83,19 @@ void SymbolData::writeNocashSym()
 			switch (data.type)
 			{
 			case Data8:
-				entry.text = formatString(L".byt:%04X",data.size);
+				entry.text = tfm::format(L".byt:%04X",data.size);
 				break;
 			case Data16:
-				entry.text = formatString(L".wrd:%04X",data.size);
+				entry.text = tfm::format(L".wrd:%04X",data.size);
 				break;
 			case Data32:
-				entry.text = formatString(L".dbl:%04X",data.size);
+				entry.text = tfm::format(L".dbl:%04X",data.size);
 				break;
 			case Data64:
-				entry.text = formatString(L".dbl:%04X",data.size);
+				entry.text = tfm::format(L".dbl:%04X",data.size);
 				break;
 			case DataAscii:
-				entry.text = formatString(L".asc:%04X",data.size);
+				entry.text = tfm::format(L".asc:%04X",data.size);
 				break;
 			}
 
@@ -174,7 +175,7 @@ void SymbolData::startModule(AssemblerFile* file)
 	{
 		if (modules[i].file == file)
 		{
-			currentModule = i;
+			currentModule = (int)i;
 			return;
 		}
 	}
@@ -182,7 +183,7 @@ void SymbolData::startModule(AssemblerFile* file)
 	SymDataModule module;
 	module.file = file;
 	modules.push_back(module);
-	currentModule = modules.size()-1;
+	currentModule = (int)modules.size()-1;
 }
 
 void SymbolData::endModule(AssemblerFile* file)
@@ -212,7 +213,7 @@ void SymbolData::startFunction(int64_t address)
 		endFunction(address);
 	}
 
-	currentFunction = modules[currentModule].functions.size();
+	currentFunction = (int)modules[currentModule].functions.size();
 
 	SymDataFunction func;
 	func.address = address;

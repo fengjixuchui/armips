@@ -1,8 +1,14 @@
 #pragma once
-#include "Util/ByteArray.h"
-#include "Core/SymbolTable.h"
-#include "MipsElfRelocator.h"
+
 #include "Commands/CAssemblerCommand.h"
+#include "Util/ByteArray.h"
+
+#include <memory>
+#include <string>
+#include <vector>
+
+class Label;
+class MipsElfRelocator;
 
 enum class PsxRelocationType { WordLiteral, UpperImmediate, LowerImmediate, FunctionCall };
 enum class PsxRelocationRefType { SymblId, SegmentOffset };
@@ -71,7 +77,7 @@ class DirectivePsxObjImport: public CAssemblerCommand
 public:
 	DirectivePsxObjImport(const std::wstring& fileName);
 	~DirectivePsxObjImport() { };
-	virtual bool Validate();
+	bool Validate(const ValidateState &state) override;
 	virtual void Encode() const;
 	virtual void writeTempData(TempData& tempData) const { };
 	virtual void writeSymData(SymbolData& symData) const;

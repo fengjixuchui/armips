@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 
 // opcode types
 #define ARM_TYPE3 0
@@ -54,13 +55,14 @@
 #define ARM_OPCMPCMN		0x80000000	// ... of cmp/cmn
 #define ARM_PCR			   0x100000000	// pc relative
 
-typedef struct {
+struct tArmOpcode
+{
 	const char* name;
 	const char* mask;
 	unsigned int encoding;
 	unsigned int type:4;
 	int64_t flags;
-} tArmOpcode;
+};
 
 #define ARM_AMODE_IB 0
 #define ARM_AMODE_IA 1

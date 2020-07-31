@@ -1,9 +1,12 @@
-#include "stdafx.h"
-#include "Arm.h"
+#include "Archs/ARM/Arm.h"
+
+#include "Archs/ARM/ArmElfRelocator.h"
+#include "Archs/ARM/ArmExpressionFunctions.h"
+#include "Archs/ARM/ArmParser.h"
+#include "Archs/ARM/CArmInstruction.h"
+#include "Archs/ARM/CThumbInstruction.h"
 #include "Core/Common.h"
-#include "ArmElfRelocator.h"
-#include "ArmParser.h"
-#include "ArmExpressionFunctions.h"
+#include "Core/Misc.h"
 
 CArmArchitecture Arm;
 
@@ -68,7 +71,7 @@ void CArmArchitecture::NextSection()
 
 std::unique_ptr<IElfRelocator> CArmArchitecture::getElfRelocator()
 {
-	return ::make_unique<ArmElfRelocator>(version != AARCH_GBA);
+	return std::make_unique<ArmElfRelocator>(version != AARCH_GBA);
 }
 
 void CArmArchitecture::addPoolValue(ArmOpcodeCommand* command, int32_t value)
