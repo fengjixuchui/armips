@@ -198,11 +198,11 @@ bool MipsElfFile::write(void* data, size_t length)
 	return false;
 }
 
-bool MipsElfFile::load(const std::wstring& fileName, const std::wstring& outputFileName)
+bool MipsElfFile::load(const fs::path& fileName, const fs::path& outputFileName)
 {
 	this->outputFileName = outputFileName;
 
-	if (elf.load(fileName,true) == false)
+	if (!elf.load(fileName,true))
 	{
 		Logger::printError(Logger::FatalError,L"Failed to load %s",fileName);
 		return false;
@@ -265,12 +265,12 @@ void MipsElfFile::save()
 // DirectiveLoadPspElf
 //
 
-DirectiveLoadMipsElf::DirectiveLoadMipsElf(const std::wstring& fileName)
+DirectiveLoadMipsElf::DirectiveLoadMipsElf(const fs::path& fileName)
 {
 	file = std::make_shared<MipsElfFile>();
 
 	this->inputName = getFullPathName(fileName);
-	if (file->load(this->inputName,this->inputName) == false)
+	if (!file->load(this->inputName,this->inputName))
 	{
 		file = nullptr;
 		return;
@@ -279,13 +279,13 @@ DirectiveLoadMipsElf::DirectiveLoadMipsElf(const std::wstring& fileName)
 	g_fileManager->addFile(file);
 }
 
-DirectiveLoadMipsElf::DirectiveLoadMipsElf(const std::wstring& inputName, const std::wstring& outputName)
+DirectiveLoadMipsElf::DirectiveLoadMipsElf(const fs::path& inputName, const fs::path& outputName)
 {
 	file = std::make_shared<MipsElfFile>();
 
 	this->inputName = getFullPathName(inputName);
 	this->outputName = getFullPathName(outputName);
-	if (file->load(this->inputName,this->outputName) == false)
+	if (!file->load(this->inputName,this->outputName))
 	{
 		file = nullptr;
 		return;

@@ -6,6 +6,7 @@
 #include "Core/Misc.h"
 #include "Core/SymbolData.h"
 #include "Util/CRC.h"
+#include "Util/FileSystem.h"
 #include "Util/Util.h"
 
 #include <cstring>
@@ -19,7 +20,7 @@ struct PsxLibEntry
 
 const unsigned char psxObjectFileMagicNum[6] = { 'L', 'N', 'K', '\x02', '\x2E', '\x07' };
 
-std::vector<PsxLibEntry> loadPsxLibrary(const std::wstring& inputName)
+std::vector<PsxLibEntry> loadPsxLibrary(const fs::path& inputName)
 {
 	ByteArray input = ByteArray::fromFile(inputName);
 	std::vector<PsxLibEntry> result;
@@ -30,7 +31,7 @@ std::vector<PsxLibEntry> loadPsxLibrary(const std::wstring& inputName)
 	if (memcmp(input.data(),psxObjectFileMagicNum,sizeof(psxObjectFileMagicNum)) == 0)
 	{
 		PsxLibEntry entry;
-		entry.name = getFileNameFromPath(inputName);
+		entry.name = inputName.filename().wstring();
 		entry.data = input;
 		result.push_back(entry);
 		return result;
@@ -322,7 +323,7 @@ checkothertype:
 	return true;
 }
 
-bool PsxRelocator::init(const std::wstring& inputName)
+bool PsxRelocator::init(const fs::path& inputName)
 {
 	auto inputFiles = loadPsxLibrary(inputName);
 	if (inputFiles.size() == 0)
@@ -338,7 +339,7 @@ bool PsxRelocator::init(const std::wstring& inputName)
 		PsxRelocatorFile file;
 		file.name = entry.name;
 
-		if (parseObject(entry.data,file) == false)
+		if (!parseObject(entry.data,file))
 		{
 			Logger::printError(Logger::Error,L"Could not load object file %s",entry.name);
 			return false;
@@ -419,7 +420,7 @@ bool PsxRelocator::relocateFile(PsxRelocatorFile& file, int& relocationAddress)
 				relocationAddress++;
 			break;
 		case PsxSymbolType::External:
-			if (sym.label->isDefined() == false)
+			if (!sym.label->isDefined())
 			{
 				Logger::queueError(Logger::Error,L"Undefined external symbol %s in file %s",sym.name,file.name);
 				error = true;
@@ -525,7 +526,7 @@ bool PsxRelocator::relocate(int& memoryAddress)
 
 	for (PsxRelocatorFile& file: files)
 	{
-		if (relocateFile(file,memoryAddress) == false)
+		if (!relocateFile(file,memoryAddress))
 			error = true;
 	}
 	
@@ -554,7 +555,7 @@ void PsxRelocator::writeSymbols(SymbolData& symData) const
 // DirectivePsxObjImport
 //
 
-DirectivePsxObjImport::DirectivePsxObjImport(const std::wstring& fileName)
+DirectivePsxObjImport::DirectivePsxObjImport(const fs::path& fileName)
 {
 	if (rel.init(fileName))
 	{
